@@ -1,0 +1,166 @@
+<html></html>
+
+<head>
+    <title>Sasha Rabeno - INFO 5100 Project 1</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        svg heatmap {
+            fill : #000000;
+        }
+        * {
+      font-family: sans-serif;
+    }
+        
+    </style>
+</head>
+
+<body>
+
+    <p id="header">
+    <h3>Name: <span class='notbold'>Sasha Rabeno</span><br>Net ID: <span class='notbold'>ar2525</span></h3>
+    <h4>Question: What are the trends in the game genre that has the most sales worldwide from 1980 to 2020?</h4>
+    </p>
+
+    <br>
+
+    <br>
+
+    <p id="p1">
+        <svg id="graph" height="800" width="900"></svg>
+    
+        <script>
+                
+        let svg = d3.select("svg#graph");
+
+        const width = svg.attr("width");
+        const height = svg.attr("height");
+        const margin = { top: 10, right: 30, bottom: 30, left: 30 };
+
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+
+
+        let chartArea = svg.append("g").attr("id", "points")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+        d3.csv('games_sales_year_genre_region.csv').then((data) => {
+
+
+           // Getting extents
+            const xExtent = d3.extent(data, d => d['release_year']);
+            const xScale = d3.scaleLinear().domain(xExtent).range([0, chartWidth]);
+            const yExtent = d3.extent(data, d => d['sales']);
+            const yScale = d3.scaleLinear().domain(yExtent).range([chartHeight, 0]);
+
+
+            // Making the axes
+            let leftAxis = d3.axisLeft(yScale); // gives an axis that lives on the left side of your chart
+            svg.append("g")
+                .attr("class", "y axis")
+                .attr("transform", `translate(${margin.left - 10}, ${margin.top})`)
+                .call(leftAxis); //.call is another shorthand thing that lets you call leftAxis (since it's a function)
+
+
+            let bottomAxis = d3.axisBottom(xScale).ticks(20, "c"); // gives an axis that lives on the left side of your chart
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", `translate(${margin.left}, ${margin.top + chartHeight + 5})`)
+                .call(bottomAxis); 
+
+
+
+            // equivalent to above
+            let circles = chartArea.selectAll("circle").data(data)
+                .join("circle")
+                .attr("cx", d => xScale(d['release_year']))
+                .attr("cy", d => yScale(d['sales']))
+                .attr("r", 7)
+                .attr("opacity", function(d) {
+                    if (d.region==="North America") return 1.0;
+                        if (d.region==="European Union") return 0.9;
+                        if (d.region==="Japan") return 0.8;
+                        if (d.region==="Other") return 0.7;
+                        if (d.region==="Worldwide") return 0.6;})
+                .style("fill", function(d) {
+                        if (d.region==="North America") return "#fe797b";
+                        if (d.region==="European Union") return "#ffb750";
+                        if (d.region==="Japan") return "#ffea56";
+                        if (d.region==="Other") return "#8fe968";
+                        if (d.region==="Worldwide") return "#36cedc";})
+
+
+            // making the legend
+            var keys = ["North America", "European Union", "Japan", "Other", "Worldwide"];
+
+            chartArea.selectAll("circles")
+                .data(keys)
+                .enter()
+                .append("circle")
+                .attr("cx", 100)
+                .attr("cy", function (d, i) { return 100 + i * 25 }) // 100 is where the first dot appears. 25 is the distance between dots
+                .attr("r", 7)
+                .style("fill", function(d) {
+                        if (d==="North America") return "#fe797b";
+                        if (d==="European Union") return "#ffb750";
+                        if (d==="Japan") return "#ffea56";
+                        if (d==="Other") return "#8fe968";
+                        if (d==="Worldwide") return "#36cedc";})
+
+            chartArea.selectAll("circles")
+                .data(keys)
+                .enter()
+                .append("text")
+                .attr("x", 120)
+                .attr("y", function(d,i){ return 100 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+                .text(function (d) { return d })
+                .attr("text-anchor", "left")
+                .style("alignment-baseline", "middle")
+                .style("fill", function(d) {
+                        if (d==="North America") return "#fe797b";
+                        if (d==="European Union") return "#ffb750";
+                        if (d==="Japan") return "#ffea56";
+                        if (d==="Other") return "#8fe968";
+                        if (d==="Worldwide") return "#36cedc";})
+
+
+  
+            // Adding title and axis labels       
+
+            chartArea.append("text")
+                .attr("x", (chartWidth / 3))
+                .attr("y", 0 - (margin.top - 30))
+                .attr("text-anchor", "middle")
+                .style("font-size", "22px")
+                .style("text-decoration", "underline")
+                .text("Sales for Action Games By Year & Region");
+
+
+            svg.append("text")
+                .attr("class", "x label")
+                .attr("text-anchor", "end")
+                .attr("x", width-40)
+                .attr("y", height-30)
+                .text("Year");
+
+            svg.append("text")
+                .attr("class", "y label")
+                .attr("text-anchor", "end")
+                .attr("y", 25)
+                .attr("dy", ".75em")    //idk what this means
+                .attr("transform", "rotate(-90)")
+                .text("Sales (millions)");
+
+        });
+
+
+    </script>
+    
+
+    </p>
+
+
+
+</body>
+</html>
