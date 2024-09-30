@@ -1,0 +1,108 @@
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+    </head>
+    <body>
+        <h3>Menghan Xu's part</h3>
+        <h4> What kinds of games get backlogged (purchased but not played) the most?</h4>
+        <p>
+            <svg id="p1" height="500" width="800" style="margin-top:50px" ></svg>
+            <script>
+                d3.csv('games_detail.csv').then((data)=>{
+                    let genreMap = {};
+                    data.forEach(function(row) {
+                        let genres = row.Genres
+                                        .replace(/\[|\]/g, '') 
+                                        .replace(/'/g, '')    
+                                        .split(', '); 
+                        console.log('Backlogs:', row.Backlogs, 'Playing:', row.Playing);
+ 
+                        let backlogs = isNaN(+row.Backlogs) ? 0 : +row.Backlogs; 
+                        let playing = isNaN(+row.Playing) ? 0 : +row.Playing; 
+
+                        genres.forEach(function(genre) {
+                            if (!genreMap[genre]) {
+                                genreMap[genre] = {backlogs: 0, playing: 0}
+                            }
+                            genreMap[genre].backlogs += backlogs; 
+                            genreMap[genre].playing += playing;
+                        });
+                    });
+                    console.log(genreMap);
+                    let genreData = [];
+                    let genresAll = Object.keys(genreMap);
+                    genresAll.forEach(d =>{
+                        if(d){
+                            genreData.push({
+                                genre: d,
+                                backlogs: genreMap[d].backlogs,
+                                playing: genreMap[d].playing,
+                                radio : genreMap[d].backlogs/(genreMap[d].backlogs + genreMap[d].playing)
+                            })
+                        }
+                    });
+                    console.log("------------------------------------");
+                    console.log(genreData);
+                    const svg = d3.select('svg#p1');
+                    const width = svg.attr('width');
+                    const height = svg.attr('height');
+                    const margins = {top: 10, right: 10, bottom: 150, left: 60}; 
+                    const chartWidth = width - margins.left - margins.right;
+                    const chartHeight = height - margins.top - margins.bottom;
+                    let chartArea = svg.append('g')
+                                        .attr('transform',`translate(${margins.left},${margins.top})`);
+                    // const xExtent = d3.extent(genreData, d => d['genre'] );
+                    
+                    const uniqueGenres = Array.from(new Set(genreData.map(d => d.genre)));
+                    console.log("Unique genres:", uniqueGenres);
+
+                    
+                    const xExtent = uniqueGenres; 
+                    console.log("Updated xExtent:", xExtent);
+
+                    const xScale = d3.scaleBand().domain(xExtent).range([0, chartWidth]);
+                    console.log("xScale domain:", xScale.domain());
+                    const yExtent = d3.extent(genreData, d => d['backlogs'] );
+                    // const xScale = d3.scaleBand().domain(xExtent).range([0, chartWidth]);
+                    const yScale = d3.scaleLinear().domain(yExtent).range([chartHeight, 0]); 
+                    console.log("xExtent:", xExtent);
+                    console.log("xScale domain:", xScale.domain());
+
+                    let leftA = d3.axisLeft(yScale);
+                    svg.append('g')
+                        .attr('class', 'y axis')
+                        .attr('transform',`translate(${margins.left-10},${margins.top})`) 
+                        .call(leftA);
+
+                    let bottomA = d3.axisBottom(xScale)
+                    let xAxis = svg.append('g')
+                        .attr('class', 'x axis')
+                        .attr('transform',`translate(${margins.left},${chartHeight+margins.top+10})`)
+                        .call(bottomA);
+
+                    xAxis.selectAll("text")
+                    .attr("transform", "rotate(-90)") 
+                    .attr("text-anchor", "end") 
+                    .attr("dx", "-0.5em") 
+                    .attr("dy", "0.5em"); 
+                    
+                    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                    console.log(genreData);
+                    chartArea.selectAll(".bar")
+                        .data(genreData)
+                        .enter()
+                        .append("rect")
+                        .attr("class", "bar")
+                        .attr("x", d => xScale(d.genre)) 
+                        .attr("y", d => yScale(d.backlogs)) 
+                        .attr("width", xScale.bandwidth()) 
+                        .attr("height", d => chartHeight - yScale(d.backlogs)) 
+                        .attr("fill", d => colorScale(d.genre)); 
+
+                
+
+                });
+            </script>
+        </p>
+    </body>
+</html>
