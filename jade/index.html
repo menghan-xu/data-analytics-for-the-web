@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Line Chart of Game Genres by Region (1984-2016)</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .line {
+        fill: none;
+      }
+      .axis-label {
+        font-size: 12px;
+      }
+      .axis line,
+      .axis path {
+        stroke: #ff47a3;
+      }
+      .gridlines line {
+        stroke: #bbb;
+      }
+
+      .gridlines .domain {
+        stroke: none;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="1000" height="500" id="jade"></svg>
+
+    <script>
+      // Load the CSV file
+      d3.csv("games_sales_year_genre_region.csv", d3.autoType).then((data) => {
+        // Filter the data for the years 1984 to 2016
+        const filteredData = data.filter(
+          (d) => d.release_year >= 1984 && d.release_year <= 2016
+        );
+
+        function findPopularGenres(filteredData) {
+          const popularGenres = [];
+
+          for (const dataPoint of filteredData) {
+            const { release_year, genre, region, sales } = dataPoint;
+            const existingEntry = popularGenres.find(
+              (entry) =>
+                entry.release_year === release_year && entry.region === region
+            );
+
+            if (!existingEntry) {
+              popularGenres.push({ release_year, region, genre, sales });
+            } else {
+              if (sales > existingEntry.sales) {
+                existingEntry.genre = genre;
+              }
+            }
+          }
+
+          return popularGenres;
+        }
+        const popularGenres = findPopularGenres(filteredData);
+        console.log(popularGenres);
+
+        const regions = ["North America", "European Union", "Japan"];
+        const genres = data.map((row) => row.genre);
+        const uniqueGenres = [...new Set(genres)];
+
+        const svg = d3.select("#jade");
+        const width = svg.attr("width");
+        const height = svg.attr("height");
+
+        const margins = { top: 80, right: 140, bottom: 100, left: 100 };
+        const chartWidth = width - margins.left - margins.right;
+        const chartHeight = height - margins.top - margins.bottom;
+
+        let chartArea = svg
+          .append("g")
+          .attr("transform", `translate(${margins.left},${margins.top})`);
+
+        // x scale (year)
+        const xScale = d3
+          .scaleLinear()
+          .domain([1984, 2016])
+          .range([0, chartWidth]);
+        const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")); // format ticks as integers without commas
+        svg
+          .append("g")
+          .attr("class", "axis")
+          .attr(
+            "transform",
+            `translate(${margins.left},${chartHeight + margins.top + 40})`
+          )
+          .call(xAxis);
+
+        svg
+          .append("text")
+          .attr("x", margins.left + chartWidth / 2)
+          .attr("y", margins.top + chartHeight + 80)
+          .style("text-anchor", "middle")
+          .text("Release Year");
+
+        // y scale (genres)
+        const yScale = d3
+          .scalePoint()
+          .domain(uniqueGenres)
+          .range([chartHeight, 0]);
+
+        let leftGridlines = d3
+          .axisLeft(yScale)
+          .tickSize(-chartWidth - 10)
+          .tickFormat("");
+        svg
+          .append("g")
+          .attr("class", "gridlines")
+          .attr("transform", `translate(${margins.left},${margins.top})`)
+          .call(leftGridlines);
+
+        const yAxis = d3.axisLeft(yScale);
+        svg
+          .append("g")
+          .attr("class", "axis")
+          .attr("transform", `translate(${margins.left},${margins.top})`)
+          .call(yAxis);
+
+        svg
+          .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("x", -margins.top - chartHeight / 2)
+          .attr("y", margins.left / 2 - 20)
+          .style("text-anchor", "middle")
+          .text("Genres");
+
+        // Line generator function
+        const line = d3
+          .line()
+          .x((d) => xScale(d.release_year))
+          .y((d) => yScale(d.genre))
+          .curve(d3.curveMonotoneX); // Add a curve to the line
+
+        // Define color scale for each region
+        const color = d3
+          .scaleOrdinal()
+          .domain(regions)
+          .range(["#fe797b", "#5574ff", "#61e38c"]); // Colors for each region
+
+        // Loop through regions and create one line per region
+        regions.forEach((region) => {
+          const regionData = popularGenres.filter((d) => d.region === region);
+
+          // Add line for each region
+          chartArea
+            .append("path")
+            .datum(regionData)
+            .attr("class", "line")
+            .attr("stroke", color(region))
+            .attr("stroke-width", 3)
+            .attr("d", line)
+            .attr("opacity", 0.5);
+
+          // Add dots for each year in the region
+
+          chartArea
+            .selectAll(`.dot-${region}`)
+            .data(regionData)
+            .join("circle")
+            .attr("class", `dot-${region}`)
+            .attr("cx", (d) => xScale(d.release_year))
+            .attr("cy", (d) => yScale(d.genre))
+            .attr("r", 5)
+            .attr("fill", color(region))
+            .attr("opacity", 1);
+        });
+
+        // Add legend
+        regions.forEach((region, i) => {
+          const circleY = 20 + i * 20; // Base y position for circles and text
+
+          svg
+            .append("circle")
+            .attr("cx", width - 140) // Adjust this to fit inside your chart
+            .attr("cy", circleY) // Use the calculated circleY
+            .attr("r", 5)
+            .attr("fill", color(region));
+
+          svg
+            .append("text")
+            .attr("x", width - 120)
+            .attr("y", circleY)
+            .attr("dominant-baseline", "middle")
+            .attr("text-anchor", "start")
+            .text(region);
+        });
+
+        svg
+          .append("text")
+          .attr("x", chartWidth / 2 + margins.left)
+          .attr("y", margins.top / 2)
+          .attr("font-size", 26)
+          .attr("font-weight", "bold")
+          .attr("text-anchor", "middle")
+          .text("Timeline of best-selling genres by region");
+
+        chartArea.raise();
+      });
+    </script>
+  </body>
+</html>
