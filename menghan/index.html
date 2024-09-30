@@ -46,7 +46,7 @@
                     const svg = d3.select('svg#p1');
                     const width = svg.attr('width');
                     const height = svg.attr('height');
-                    const margins = {top: 10, right: 10, bottom: 150, left: 60}; 
+                    const margins = {top: 10, right: 10, bottom: 150, left: 100}; 
                     const chartWidth = width - margins.left - margins.right;
                     const chartHeight = height - margins.top - margins.bottom;
                     let chartArea = svg.append('g')
@@ -99,7 +99,22 @@
                         .attr("height", d => chartHeight - yScale(d.backlogs)) 
                         .attr("fill", d => colorScale(d.genre)); 
 
-                
+                    
+                    svg.append("text")
+                        .attr("class", "x-axis-title")
+                        .attr("x", width / 2)
+                        .attr("y", height - margins.bottom / 2)
+                        .attr("text-anchor", "middle")
+                        .text("Genres");
+
+                    
+                    svg.append("text")
+                        .attr("class", "y-axis-title")
+                        .attr("transform", "rotate(-90)") 
+                        .attr("x", - (height / 2) ) 
+                        .attr("y", margins.left / 3) 
+                        .attr("text-anchor", "middle")
+                        .text("Backlogs");
 
                 });
             </script>
