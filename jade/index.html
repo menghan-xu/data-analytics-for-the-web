@@ -13,16 +13,16 @@
     <title>Line Chart of Game Genres by Region (1984-2016)</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-      /* body {
+      body {
         font-family: "Press Start 2P", system-ui;
         font-weight: 400;
         font-style: normal;
         font-size: 14px;
-      } */
-
-      body {
-        font-family: sans-serif;
       }
+
+      /* body {
+        font-family: sans-serif;
+      } */
       .line {
         fill: none;
       }
@@ -40,6 +40,11 @@
   </head>
   <body>
     <svg width="1000" height="420" id="jade"></svg>
+    <p>
+      North America and Europe tend to share similar tastes in game genres,
+      while Japan has a special love for RPGs. However, there are three years
+      when all three regions loved the same game genre.
+    </p>
 
     <script>
       // Load the CSV file
@@ -219,7 +224,7 @@
             .attr("y", circleY)
             .attr("dominant-baseline", "middle")
             .attr("text-anchor", "start")
-            .attr("font-size", 8)
+            .attr("font-size", 12)
             .text(region);
         });
 
