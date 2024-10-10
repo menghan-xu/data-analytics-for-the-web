@@ -4,19 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Google fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+      rel="stylesheet"
+    /> -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
       rel="stylesheet"
     />
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
       body {
-        font-family: "Silkscreen", sans-serif;
+        font-family: "Press Start 2P", sans-serif;
         font-weight: 400;
-        font-size: 14px;
+        font-size: 12px;
         line-height: 1.5;
         display: flex;
         justify-content: center; /* Centers horizontally */
@@ -30,13 +36,13 @@
       p {
         max-width: 800px; /* Maximum width for text content */
         margin: 0 auto; /* Center the text container */
-        font-size: 18px;
+        font-size: 12px;
       }
       h3 {
-        font-size: 24px;
+        font-size: 16px;
       }
       .axis .tick text {
-        font-size: 14px;
+        font-size: 12px;
         font-family: sans-serif;
       }
       .text-container {
@@ -57,10 +63,11 @@
         opacity: 0.8;
       }
       .axis-label {
-        font-size: 16px;
+        font-size: 14px;
       }
       .legend {
         cursor: pointer;
+        font-size: 10px;
       }
       .tooltip {
         position: absolute;
@@ -91,14 +98,16 @@
       </p>
     </div>
     <div id="viz2" class="viz">
-      <h3>Popularity Trends of Top 10 Game Genres by Region</h3>
-      <svg width="1000" height="420" id="jade"></svg>
+      <h3>Popularity Trends of Game Genres by Region</h3>
+      <svg width="1100" height="480" id="jade"></svg>
     </div>
     <div class="text-container">
       <p>
         North America and Europe tend to share similar tastes in game genres,
-        while Japan has a special love for RPGs. However, there are three years
-        when all three regions loved the same game genre.
+        while Japan has a unique preference for RPGs. Interestingly, there were
+        three specific years when all three regions favored the same genre.
+        <br /><br />Now, let's dive deeper into genres — this time, shifting the
+        focus from sales to backlogs.
       </p>
     </div>
     <div id="viz3" class="viz">
@@ -277,7 +286,7 @@
             const width = svg.attr("width");
             const height = svg.attr("height");
 
-            const margins = { top: 80, right: 140, bottom: 60, left: 120 };
+            const margins = { top: 80, right: 140, bottom: 85, left: 130 };
             const chartWidth = width - margins.left - margins.right;
             const chartHeight = height - margins.top - margins.bottom;
 
@@ -305,7 +314,7 @@
               .append("text")
               .attr("class", "axis-label")
               .attr("x", margins.left + chartWidth / 2)
-              .attr("y", margins.top + chartHeight + 60)
+              .attr("y", margins.top + chartHeight + 70)
               .style("text-anchor", "middle")
               .text("Release Year");
 
@@ -343,7 +352,7 @@
               .attr("class", "axis-label")
               .attr("transform", "rotate(-90)")
               .attr("x", -margins.top - chartHeight / 2)
-              .attr("y", margins.left / 2 - 30)
+              .attr("y", margins.left / 2 - 40)
               .style("text-anchor", "middle")
               .text("Best-Selling Genre");
 
@@ -357,7 +366,7 @@
             const color = d3
               .scaleOrdinal()
               .domain(regions)
-              .range(["#fe797b", "#5574ff", "#61e38c"]); // Colors for each region
+              .range(["#fe797b", "#5aacff", "#4bb36d"]); // Colors for each region
 
             // Loop through regions and create one line per region
             regions.forEach((region) => {
@@ -373,7 +382,7 @@
                 .attr("stroke", color(region))
                 .attr("stroke-width", 3)
                 .attr("d", lineGen)
-                .attr("opacity", 0.4);
+                .attr("opacity", 0.5);
 
               // Add dots for each year in the region
               chartArea
@@ -385,7 +394,7 @@
                 .attr("cy", (d) => yScale(d.genre))
                 .attr("r", 5)
                 .attr("fill", color(region))
-                .attr("opacity", 0.6);
+                .attr("opacity", 0.5);
             });
 
             // Group by release year to check if all regions have the same genre
@@ -422,7 +431,7 @@
 
               svg
                 .append("circle")
-                .attr("cx", width - 140)
+                .attr("cx", width - 180)
                 .attr("cy", circleY)
                 .attr("r", 5)
                 .attr("fill", color(region));
@@ -430,12 +439,12 @@
               svg
                 .append("text")
                 .attr("class", "legend")
-                .attr("x", width - 120)
+                .attr("x", width - 160)
                 .attr("y", circleY)
                 .attr("dominant-baseline", "middle")
                 .attr("text-anchor", "start")
-                .attr("font-size", 12)
-                .text(region);
+                .text(region)
+                .attr("fill", color(region));
             });
 
             chartArea.raise();
