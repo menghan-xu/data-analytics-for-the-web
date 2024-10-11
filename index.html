@@ -38,6 +38,9 @@
         margin: 0 auto; /* Center the text container */
         font-size: 12px;
       }
+      span {
+        font-size: 18px;
+      }
       h3 {
         font-size: 16px;
       }
@@ -117,9 +120,10 @@
       <p>
         North America and Europe tend to share similar tastes in game genres,
         while Japan has a unique preference for RPGs. Interestingly, there were
-        three specific years when all three regions favored the same genre.
-        <br /><br />Now, let's dive deeper into genres — this time, shifting the
-        focus from sales to backlogs.
+        three specific years when all three regions favored the same genre,
+        which are marked with a <span>&#x1F451;</span>. <br /><br />Now, let's
+        dive deeper into genres — this time, shifting the focus from sales to
+        backlogs.
       </p>
     </div>
     <div id="viz3" class="viz">
@@ -404,7 +408,7 @@
             const color = d3
               .scaleOrdinal()
               .domain(regions)
-              .range(["#fe797b", "#5aacff", "#4bb36d"]); // Colors for each region
+              .range(["#6AB43F", "#FF7480", "#7698FF"]); // Colors for each region
 
             // Loop through regions and create one line per region
             regions.forEach((region) => {
@@ -418,9 +422,9 @@
                 .datum(regionData)
                 .attr("class", "line")
                 .attr("stroke", color(region))
-                .attr("stroke-width", 3)
+                .style("stroke-width", 3)
                 .attr("d", lineGen)
-                .attr("opacity", 0.5);
+                .attr("stroke-opacity", 0.4);
 
               // Add dots for each year in the region
               chartArea
