@@ -153,8 +153,8 @@
     </div>
     <script>
       function drawVisualization1() {
-        const margin = { top: 40, right: 200, bottom: 40, left: 50 },
-          width = 1100 - margin.left - margin.right,
+        const margin = { top: 40, right: 50, bottom: 40, left: 50 },
+          width = 1000 - margin.left - margin.right,
           height = 500 - margin.top - margin.bottom;
 
         const svg = d3
@@ -246,7 +246,7 @@
             .enter()
             .append("g")
             .attr("class", "legend")
-            .attr("transform", (d, i) => `translate(${width - 20},${i * 20})`)
+            .attr("transform", (d, i) => `translate(${100},${i * 20})`)
             .on("click", (event, genre) => {
               // highight the line
               d3.selectAll(".line").style("opacity", 0.1);
