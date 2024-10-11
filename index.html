@@ -199,10 +199,11 @@
             .attr("transform", `translate(0,${height})`)
             .call(d3.axisBottom(x).tickFormat(d3.format("d")));
 
-          svg.append("text")
+          svg
+            .append("text")
             .attr("text-anchor", "middle")
             .attr("x", width / 2)
-            .attr("y", height + margin.bottom - 10)
+            .attr("y", height + margin.bottom)
             .text("Year");
 
           const y = d3
@@ -212,7 +213,8 @@
 
           svg.append("g").call(d3.axisLeft(y));
 
-          svg.append("text")
+          svg
+            .append("text")
             .attr("text-anchor", "middle")
             .attr("transform", "rotate(-90)")
             .attr("x", -height / 2)
@@ -352,7 +354,7 @@
               .attr("x", margins.left + chartWidth / 2)
               .attr("y", margins.top + chartHeight + 70)
               .style("text-anchor", "middle")
-              .text("Release Year");
+              .text("Year");
 
             // y scale (genres)
             const yScale = d3
