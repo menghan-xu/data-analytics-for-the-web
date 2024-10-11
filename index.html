@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Google fonts -->
+    <!-- <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+      rel="stylesheet"
+    /> -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: "Press Start 2P", sans-serif;
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 1.5;
+        display: flex;
+        justify-content: center; /* Centers horizontally */
+        align-items: center; /* Centers vertically */
+        margin: 0;
+        flex-direction: column;
+        gap: 40px;
+        margin-bottom: 40px;
+        margin-top: 40px;
+      }
+      p {
+        max-width: 800px; /* Maximum width for text content */
+        margin: 0 auto; /* Center the text container */
+        font-size: 12px;
+      }
+      h3 {
+        font-size: 16px;
+      }
+      .axis .tick text {
+        font-size: 12px;
+        font-family: sans-serif;
+      }
+      .text-container {
+        width: 100%; /* Full width for the paragraph */
+        background-color: rgb(105, 40, 48); /* Dark pink background */
+        color: rgb(255, 215, 221); /* Text color */
+        padding: 20px;
+        box-sizing: border-box; /* Ensures padding is included in width */
+        margin: 20px 0; /* Space above and below paragraphs */
+      }
+      .viz {
+        text-align: center; /* Centers text inside the div */
+        width: 100%; /* Optional: ensures the div takes the full width */
+      }
+      .line {
+        fill: none;
+        stroke-width: 2;
+        opacity: 0.8;
+      }
+      .axis-label {
+        font-size: 14px;
+      }
+      .legend {
+        cursor: pointer;
+        font-size: 10px;
+      }
+      .tooltip {
+        position: absolute;
+        background: #f9f9f9;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        pointer-events: none;
+        font-size: 12px;
+      }
+      .gridlines line {
+        stroke: #bbb;
+      }
+      .gridlines .domain {
+        stroke: none;
+      }
+    </style>
+    <title>Visualizing Game Trends!</title>
+  </head>
+  <body>
+    <div id="viz1" class="viz">
+      <h3>Popularity Trends of Top 10 Game Genres (1980-2023)</h3>
+      <div class="tooltip" style="opacity: 0"></div>
+    </div>
+    <div class="text-container">
+      <p>
+        Add some text about your graph & connect your graph with the graph below
+      </p>
+    </div>
+    <div id="viz2" class="viz">
+      <h3>Popularity Trends of Game Genres by Region</h3>
+      <svg width="1100" height="480" id="jade"></svg>
+    </div>
+    <div class="text-container">
+      <p>
+        North America and Europe tend to share similar tastes in game genres,
+        while Japan has a unique preference for RPGs. Interestingly, there were
+        three specific years when all three regions favored the same genre.
+        <br /><br />Now, let's dive deeper into genres — this time, shifting the
+        focus from sales to backlogs.
+      </p>
+    </div>
+    <div id="viz3" class="viz">
+      <h3>
+        What kinds of games get backlogged (purchased but not played) the most?
+      </h3>
+      <svg id="p1" height="500" width="800"></svg>
+    </div>
+    <div class="text-container">
+      <p>
+        Add some text about your graph & connect your graph with the graph below
+      </p>
+    </div>
+    <div id="viz4" class="viz">
+      <h3>Sales for Action Games By Year & Region</h3>
+      <svg id="graph" height="800" width="900"></svg>
+    </div>
+    <div class="text-container">
+      <p>Add some text about your graph & summary for 4 graphs</p>
+    </div>
+    <script>
+      function drawVisualization1() {
+        const margin = { top: 40, right: 150, bottom: 40, left: 50 },
+          width = 900 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+
+        const svg = d3
+          .select("#viz1")
+          .append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const tooltip = d3.select(".tooltip");
+
+        d3.csv("game_genre_trends.csv").then((data) => {
+          data.forEach((d) => {
+            d["Release Year"] = +d["Release Year"];
+            d["Count"] = +d["Count"];
+          });
+
+          // sum all the genre，and get the front 10
+          const genreCounts = d3.rollup(
+            data,
+            (v) => d3.sum(v, (d) => d.Count),
+            (d) => d.Genres
+          );
+
+          const topGenres = Array.from(genreCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map((d) => d[0]);
+
+          const filteredData = data.filter((d) => topGenres.includes(d.Genres));
+
+          const color = d3.scaleOrdinal(d3.schemeCategory10).domain(topGenres);
+
+          const x = d3
+            .scaleLinear()
+            .domain(d3.extent(filteredData, (d) => d["Release Year"]))
+            .range([0, width]);
+
+          svg
+            .append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+          const y = d3
+            .scaleLinear()
+            .domain([0, d3.max(filteredData, (d) => d.Count)])
+            .range([height, 0]);
+
+          svg.append("g").call(d3.axisLeft(y));
+
+          const line = d3
+            .line()
+            .x((d) => x(d["Release Year"]))
+            .y((d) => y(d.Count))
+            .curve(d3.curveBasis); // I feel that the curve line is visually better
+
+          const paths = svg
+            .selectAll(".line")
+            .data(topGenres)
+            .enter()
+            .append("path")
+            .attr("class", "line")
+            .attr("d", (genre) =>
+              line(filteredData.filter((d) => d.Genres === genre))
+            )
+            .attr("stroke", (genre) => color(genre))
+            .attr("fill", "none")
+            .on("mouseover", function (event, genre) {
+              d3.selectAll(".line").style("opacity", 0.1);
+              d3.select(this).style("opacity", 1).attr("stroke-width", 4);
+              tooltip.transition().duration(200).style("opacity", 0.9);
+              tooltip
+                .html(`<strong>${genre}</strong>`)
+                .style("left", event.pageX + 5 + "px")
+                .style("top", event.pageY - 28 + "px");
+            })
+            .on("mouseout", function () {
+              d3.selectAll(".line")
+                .style("opacity", 0.8)
+                .attr("stroke-width", 2);
+              tooltip.transition().duration(500).style("opacity", 0);
+            });
+
+          // initially its hard to read but then add a interactable line would be nice
+          const legend = svg
+            .selectAll(".legend")
+            .data(topGenres)
+            .enter()
+            .append("g")
+            .attr("class", "legend")
+            .attr("transform", (d, i) => `translate(${width + 10},${i * 20})`)
+            .on("click", (event, genre) => {
+              // highight the line
+              d3.selectAll(".line").style("opacity", 0.1);
+              const activeLine = paths.filter((d) => d === genre);
+              activeLine.style("opacity", 1).attr("stroke-width", 4);
+            });
+
+          legend
+            .append("rect")
+            .attr("x", 0)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", color);
+
+          legend
+            .append("text")
+            .attr("x", 24)
+            .attr("y", 9)
+            .attr("dy", "0.35em")
+            .text((d) => d);
+        });
+      }
+      function drawVisualization2() {
+        // Load the CSV file
+        d3.csv("games_sales_year_genre_region.csv", d3.autoType).then(
+          (data) => {
+            // Filter the data for the years 1984 to 2016
+            const filteredData = data.filter(
+              (d) => d.release_year >= 1984 && d.release_year <= 2016
+            );
+
+            function findPopularGenres(filteredData) {
+              const popularGenres = [];
+
+              for (const dataPoint of filteredData) {
+                const { release_year, genre, region, sales } = dataPoint;
+                const existingEntry = popularGenres.find(
+                  (entry) =>
+                    entry.release_year === release_year &&
+                    entry.region === region
+                );
+
+                if (!existingEntry) {
+                  popularGenres.push({ release_year, region, genre, sales });
+                } else {
+                  if (sales > existingEntry.sales) {
+                    existingEntry.genre = genre;
+                    existingEntry.sales = sales;
+                  }
+                }
+              }
+
+              return popularGenres;
+            }
+            const popularGenres = findPopularGenres(filteredData);
+            const genres = new Set(popularGenres.map((row) => row.genre));
+            const regions = ["North America", "European Union", "Japan"];
+
+            const svg = d3.select("#jade");
+            const width = svg.attr("width");
+            const height = svg.attr("height");
+
+            const margins = { top: 80, right: 140, bottom: 85, left: 130 };
+            const chartWidth = width - margins.left - margins.right;
+            const chartHeight = height - margins.top - margins.bottom;
+
+            let chartArea = svg
+              .append("g")
+              .attr("transform", `translate(${margins.left},${margins.top})`);
+
+            // x scale (year)
+            const xScale = d3
+              .scaleLinear()
+              .domain([1984, 2016])
+              .range([0, chartWidth]);
+
+            const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")); // format ticks as integers without commas
+            svg
+              .append("g")
+              .attr("class", "axis")
+              .attr(
+                "transform",
+                `translate(${margins.left},${chartHeight + margins.top + 20})`
+              )
+              .call(xAxis);
+
+            svg
+              .append("text")
+              .attr("class", "axis-label")
+              .attr("x", margins.left + chartWidth / 2)
+              .attr("y", margins.top + chartHeight + 70)
+              .style("text-anchor", "middle")
+              .text("Release Year");
+
+            // y scale (genres)
+            const yScale = d3
+              .scalePoint()
+              .domain(genres)
+              .range([chartHeight, 0]);
+
+            const yAxis = d3.axisLeft(yScale);
+            svg
+              .append("g")
+              .attr("class", "axis")
+              .attr(
+                "transform",
+                `translate(${margins.left - 20},${margins.top})`
+              )
+              .call(yAxis);
+
+            let yGridlines = d3
+              .axisLeft(yScale)
+              .tickSize(-chartWidth - 20)
+              .tickFormat("");
+            svg
+              .append("g")
+              .attr("class", "gridlines")
+              .attr(
+                "transform",
+                `translate(${margins.left - 20},${margins.top})`
+              )
+              .call(yGridlines);
+
+            svg
+              .append("text")
+              .attr("class", "axis-label")
+              .attr("transform", "rotate(-90)")
+              .attr("x", -margins.top - chartHeight / 2)
+              .attr("y", margins.left / 2 - 40)
+              .style("text-anchor", "middle")
+              .text("Best-Selling Genre");
+
+            // Line generator
+            const lineGen = d3
+              .line()
+              .x((d) => xScale(d.release_year))
+              .y((d) => yScale(d.genre));
+
+            // Define color scale for each region
+            const color = d3
+              .scaleOrdinal()
+              .domain(regions)
+              .range(["#fe797b", "#5aacff", "#4bb36d"]); // Colors for each region
+
+            // Loop through regions and create one line per region
+            regions.forEach((region) => {
+              const regionData = popularGenres.filter(
+                (d) => d.region === region
+              );
+
+              // Add line for each region
+              chartArea
+                .append("path")
+                .datum(regionData)
+                .attr("class", "line")
+                .attr("stroke", color(region))
+                .attr("stroke-width", 3)
+                .attr("d", lineGen)
+                .attr("opacity", 0.5);
+
+              // Add dots for each year in the region
+              chartArea
+                .selectAll(`.dot-${region}`)
+                .data(regionData)
+                .join("circle")
+                .attr("class", `dot-${region}`)
+                .attr("cx", (d) => xScale(d.release_year))
+                .attr("cy", (d) => yScale(d.genre))
+                .attr("r", 5)
+                .attr("fill", color(region))
+                .attr("opacity", 0.5);
+            });
+
+            // Group by release year to check if all regions have the same genre
+            const yearsWithCrown = [];
+            const groupedByYear = d3.group(
+              popularGenres,
+              (d) => d.release_year
+            );
+
+            groupedByYear.forEach((entries, year) => {
+              // Extract the genres for the three regions in a given year
+              const genres = entries.map((entry) => entry.genre);
+
+              // Check if all genres are the same for this year
+              if (new Set(genres).size === 1) {
+                yearsWithCrown.push({ year, genre: genres[0] });
+              }
+            });
+
+            // Now append a crown emoji for years when all three regions have the same best-selling genre
+            yearsWithCrown.forEach(({ year, genre }) => {
+              chartArea
+                .append("text")
+                .attr("x", xScale(year)) // Align crown with the year
+                .attr("y", yScale(genre) - 10) // Position crown above the genre dot
+                .attr("text-anchor", "middle")
+                .attr("font-size", "20px")
+                .text("👑");
+            });
+
+            // Add legend
+            regions.forEach((region, i) => {
+              const circleY = 20 + i * 20;
+
+              svg
+                .append("circle")
+                .attr("cx", width - 180)
+                .attr("cy", circleY)
+                .attr("r", 5)
+                .attr("fill", color(region));
+
+              svg
+                .append("text")
+                .attr("class", "legend")
+                .attr("x", width - 160)
+                .attr("y", circleY)
+                .attr("dominant-baseline", "middle")
+                .attr("text-anchor", "start")
+                .text(region)
+                .attr("fill", color(region));
+            });
+
+            chartArea.raise();
+          }
+        );
+      }
+      function drawVisualization3() {
+        d3.csv("games_detail.csv").then((data) => {
+          let genreMap = {};
+          data.forEach(function (row) {
+            let genres = row.Genres.replace(/\[|\]/g, "")
+              .replace(/'/g, "")
+              .split(", ");
+            console.log("Backlogs:", row.Backlogs, "Playing:", row.Playing);
+
+            let backlogs = isNaN(+row.Backlogs) ? 0 : +row.Backlogs;
+            let playing = isNaN(+row.Playing) ? 0 : +row.Playing;
+
+            genres.forEach(function (genre) {
+              if (!genreMap[genre]) {
+                genreMap[genre] = { backlogs: 0, playing: 0 };
+              }
+              genreMap[genre].backlogs += backlogs;
+              genreMap[genre].playing += playing;
+            });
+          });
+          console.log(genreMap);
+          let genreData = [];
+          let genresAll = Object.keys(genreMap);
+          genresAll.forEach((d) => {
+            if (d) {
+              genreData.push({
+                genre: d,
+                backlogs: genreMap[d].backlogs,
+                playing: genreMap[d].playing,
+                radio:
+                  genreMap[d].backlogs /
+                  (genreMap[d].backlogs + genreMap[d].playing),
+              });
+            }
+          });
+          console.log("------------------------------------");
+          console.log(genreData);
+          const svg = d3.select("svg#p1");
+          const width = svg.attr("width");
+          const height = svg.attr("height");
+          const margins = { top: 10, right: 10, bottom: 150, left: 100 };
+          const chartWidth = width - margins.left - margins.right;
+          const chartHeight = height - margins.top - margins.bottom;
+          let chartArea = svg
+            .append("g")
+            .attr("transform", `translate(${margins.left},${margins.top})`);
+          // const xExtent = d3.extent(genreData, d => d['genre'] );
+
+          const uniqueGenres = Array.from(
+            new Set(genreData.map((d) => d.genre))
+          );
+          console.log("Unique genres:", uniqueGenres);
+
+          const xExtent = uniqueGenres;
+          console.log("Updated xExtent:", xExtent);
+
+          const xScale = d3.scaleBand().domain(xExtent).range([0, chartWidth]);
+          console.log("xScale domain:", xScale.domain());
+          const yExtent = d3.extent(genreData, (d) => d["backlogs"]);
+          // const xScale = d3.scaleBand().domain(xExtent).range([0, chartWidth]);
+          const yScale = d3
+            .scaleLinear()
+            .domain(yExtent)
+            .range([chartHeight, 0]);
+          console.log("xExtent:", xExtent);
+          console.log("xScale domain:", xScale.domain());
+
+          let leftA = d3.axisLeft(yScale);
+          svg
+            .append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(${margins.left - 10},${margins.top})`)
+            .call(leftA);
+
+          let bottomA = d3.axisBottom(xScale);
+          let xAxis = svg
+            .append("g")
+            .attr("class", "x axis")
+            .attr(
+              "transform",
+              `translate(${margins.left},${chartHeight + margins.top + 10})`
+            )
+            .call(bottomA);
+
+          xAxis
+            .selectAll("text")
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "end")
+            .attr("dx", "-0.5em")
+            .attr("dy", "0.5em");
+
+          const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+          console.log(genreData);
+          chartArea
+            .selectAll(".bar")
+            .data(genreData)
+            .enter()
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", (d) => xScale(d.genre))
+            .attr("y", (d) => yScale(d.backlogs))
+            .attr("width", xScale.bandwidth())
+            .attr("height", (d) => chartHeight - yScale(d.backlogs))
+            .attr("fill", (d) => colorScale(d.genre));
+
+          svg
+            .append("text")
+            .attr("class", "axis-label")
+            .attr("x", width / 2)
+            .attr("y", height - margins.bottom / 2)
+            .attr("text-anchor", "middle")
+            .text("Genres");
+
+          svg
+            .append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -(height / 2))
+            .attr("y", margins.left / 3)
+            .attr("text-anchor", "middle")
+            .text("Backlogs");
+        });
+      }
+      function drawVisualization4() {
+        let svg = d3.select("svg#graph");
+
+        const width = svg.attr("width");
+        const height = svg.attr("height");
+        const margin = { top: 10, right: 30, bottom: 30, left: 30 };
+
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+        let chartArea = svg
+          .append("g")
+          .attr("id", "points")
+          .attr(
+            "transform",
+            "translate(" + margin.left + "," + margin.top + ")"
+          );
+
+        d3.csv("games_sales_year_genre_region.csv").then((data) => {
+          // Getting extents
+          const xExtent = d3.extent(data, (d) => d["release_year"]);
+          const xScale = d3
+            .scaleLinear()
+            .domain(xExtent)
+            .range([0, chartWidth]);
+          const yExtent = d3.extent(data, (d) => d["sales"]);
+          const yScale = d3
+            .scaleLinear()
+            .domain(yExtent)
+            .range([chartHeight, 0]);
+
+          // Making the axes
+          let leftAxis = d3.axisLeft(yScale); // gives an axis that lives on the left side of your chart
+          svg
+            .append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(${margin.left - 10}, ${margin.top})`)
+            .call(leftAxis); //.call is another shorthand thing that lets you call leftAxis (since it's a function)
+
+          let bottomAxis = d3.axisBottom(xScale).ticks(20, "c"); // gives an axis that lives on the left side of your chart
+          svg
+            .append("g")
+            .attr("class", "x axis")
+            .attr(
+              "transform",
+              `translate(${margin.left}, ${margin.top + chartHeight + 5})`
+            )
+            .call(bottomAxis);
+
+          // equivalent to above
+          let circles = chartArea
+            .selectAll("circle")
+            .data(data)
+            .join("circle")
+            .attr("cx", (d) => xScale(d["release_year"]))
+            .attr("cy", (d) => yScale(d["sales"]))
+            .attr("r", 7)
+            .attr("opacity", function (d) {
+              if (d.region === "North America") return 1.0;
+              if (d.region === "European Union") return 0.9;
+              if (d.region === "Japan") return 0.8;
+              if (d.region === "Other") return 0.7;
+              if (d.region === "Worldwide") return 0.6;
+            })
+            .style("fill", function (d) {
+              if (d.region === "North America") return "#fe797b";
+              if (d.region === "European Union") return "#ffb750";
+              if (d.region === "Japan") return "#ffea56";
+              if (d.region === "Other") return "#8fe968";
+              if (d.region === "Worldwide") return "#36cedc";
+            });
+
+          // making the legend
+          var keys = [
+            "North America",
+            "European Union",
+            "Japan",
+            "Other",
+            "Worldwide",
+          ];
+
+          chartArea
+            .selectAll("circles")
+            .data(keys)
+            .enter()
+            .append("circle")
+            .attr("cx", 100)
+            .attr("cy", function (d, i) {
+              return 100 + i * 25;
+            }) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("r", 7)
+            .style("fill", function (d) {
+              if (d === "North America") return "#fe797b";
+              if (d === "European Union") return "#ffb750";
+              if (d === "Japan") return "#ffea56";
+              if (d === "Other") return "#8fe968";
+              if (d === "Worldwide") return "#36cedc";
+            });
+
+          chartArea
+            .selectAll("circles")
+            .data(keys)
+            .enter()
+            .append("text")
+            .attr("x", 120)
+            .attr("y", function (d, i) {
+              return 100 + i * 25;
+            }) // 100 is where the first dot appears. 25 is the distance between dots
+            .text(function (d) {
+              return d;
+            })
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
+            .style("fill", function (d) {
+              if (d === "North America") return "#fe797b";
+              if (d === "European Union") return "#ffb750";
+              if (d === "Japan") return "#ffea56";
+              if (d === "Other") return "#8fe968";
+              if (d === "Worldwide") return "#36cedc";
+            });
+
+          // Adding axis labels
+          svg
+            .append("text")
+            .attr("class", "axis-label")
+            .attr("text-anchor", "end")
+            .attr("x", width - 40)
+            .attr("y", height - 30)
+            .text("Year");
+
+          svg
+            .append("text")
+            .attr("class", "axis-label")
+            .attr("text-anchor", "end")
+            .attr("y", 25)
+            .attr("dy", ".75em") //idk what this means
+            .attr("transform", "rotate(-90)")
+            .text("Sales (millions)");
+        });
+      }
+      drawVisualization1();
+      drawVisualization2();
+      drawVisualization3();
+      drawVisualization4();
+    </script>
+  </body>
+</html>
