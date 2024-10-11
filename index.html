@@ -124,7 +124,7 @@
     </div>
     <div id="viz4" class="viz">
       <h3>Sales for Action Games By Year & Region</h3>
-      <svg id="graph" height="800" width="900"></svg>
+      <svg id="graph" height="550" width="900"></svg>
     </div>
     <div class="text-container">
       <p>Here, we can see that sales for action games go up worldwide as time passes, and that North
@@ -626,7 +626,10 @@
             )
             .call(bottomAxis);
 
-          // equivalent to above
+            
+
+
+
           let circles = chartArea
             .selectAll("circle")
             .data(data)
@@ -636,6 +639,7 @@
             .attr("r", 7)
             .attr("opacity", function (d) {
               if (d.release_year > 2016) return 0;
+              if (d.genre != "Action") return 0;
               if (d.region === "North America") return 1.0;
               if (d.region === "European Union") return 0.9;
               if (d.region === "Japan") return 0.8;
@@ -698,6 +702,7 @@
               if (d === "Other") return "#8fe968";
               if (d === "Worldwide") return "#36cedc";
             });
+
 
           // Adding axis labels
           svg
