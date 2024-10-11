@@ -8,115 +8,144 @@
         <p>
             <svg id="p1" height="500" width="800" style="margin-top:50px" ></svg>
             <script>
-                d3.csv('games_detail.csv').then((data)=>{
-                    let genreMap = {};
-                    data.forEach(function(row) {
-                        let genres = row.Genres
-                                        .replace(/\[|\]/g, '') 
-                                        .replace(/'/g, '')    
-                                        .split(', '); 
-                        console.log('Backlogs:', row.Backlogs, 'Playing:', row.Playing);
- 
-                        let backlogs = isNaN(+row.Backlogs) ? 0 : +row.Backlogs; 
-                        let playing = isNaN(+row.Playing) ? 0 : +row.Playing; 
+                d3.csv("games_detail.csv", d3.autoType)
+          .then((data) => {
+          let genreMap = {};
+          data.forEach(row => {
+            let genres = row.Genres.replace(/\[|\]|'/g, "")  //remove [ , ] and '
+                                  .split(", ");     // turn string into an array
+            let backlogs = isNaN(row.Backlogs) ? 0 : row.Backlogs;
+            let playing = isNaN(row.Playing) ? 0 : row.Playing;
+            genres.forEach(genre => {
+              if (!genreMap[genre]) 
+                genreMap[genre] = { backlogs: 0, playing: 0 };
+              genreMap[genre].backlogs += backlogs;
+              genreMap[genre].playing += playing;
+            });
+          });
+          let genreData = [];
+          let genresAll = Object.keys(genreMap);
+          genresAll.forEach(d => {
+            if (d) {
+              genreData.push({
+                genre: d,
+                backlogs: genreMap[d].backlogs,
+                playing: genreMap[d].playing,
+                radio:
+                  genreMap[d].backlogs /
+                  (genreMap[d].backlogs + genreMap[d].playing),
+              });
+            }
+          });
+          
+          const genres = ['Adventure', 'RPG', 'Brawler', 'Indie', 'Turn Based Strategy', 'Platform', 'Simulator', 'Strategy', 'Puzzle', 'Shooter']
+          const genreDataFilter = genreData.filter(
+                d => (genres.includes(d.genre))
+          );
+          
+          const svg = d3.select("svg#p1");
+          const width = svg.attr("width");
+          const height = svg.attr("height");
+          const margins = { top: 10, right: 100, bottom: 150, left: 100 };
+          const chartWidth = width - margins.left - margins.right;
+          const chartHeight = height - margins.top - margins.bottom;
+          let chartArea = svg.append("g").attr("transform", `translate(${margins.left},${margins.top})`);
 
-                        genres.forEach(function(genre) {
-                            if (!genreMap[genre]) {
-                                genreMap[genre] = {backlogs: 0, playing: 0}
-                            }
-                            genreMap[genre].backlogs += backlogs; 
-                            genreMap[genre].playing += playing;
-                        });
-                    });
-                    console.log(genreMap);
-                    let genreData = [];
-                    let genresAll = Object.keys(genreMap);
-                    genresAll.forEach(d =>{
-                        if(d){
-                            genreData.push({
-                                genre: d,
-                                backlogs: genreMap[d].backlogs,
-                                playing: genreMap[d].playing,
-                                radio : genreMap[d].backlogs/(genreMap[d].backlogs + genreMap[d].playing)
-                            })
-                        }
-                    });
-                    console.log("------------------------------------");
-                    console.log(genreData);
-                    const svg = d3.select('svg#p1');
-                    const width = svg.attr('width');
-                    const height = svg.attr('height');
-                    const margins = {top: 10, right: 10, bottom: 150, left: 100}; 
-                    const chartWidth = width - margins.left - margins.right;
-                    const chartHeight = height - margins.top - margins.bottom;
-                    let chartArea = svg.append('g')
-                                        .attr('transform',`translate(${margins.left},${margins.top})`);
-                    // const xExtent = d3.extent(genreData, d => d['genre'] );
-                    
-                    const uniqueGenres = Array.from(new Set(genreData.map(d => d.genre)));
-                    console.log("Unique genres:", uniqueGenres);
+          const xScale = d3.scaleBand()
+                          .domain(genres)
+                          .range([0, chartWidth])
+                          .padding(0.05);
+          const yExtent = d3.extent([0, d3.max(genreDataFilter, d => d.backlogs)]);
+          const yScale = d3.scaleLinear()
+                          .domain(yExtent)
+                          .range([chartHeight, 0]);
+          
+          let leftA = d3.axisLeft(yScale);
+          svg.append("g")
+            .attr("class", "y axis")
+            .attr("transform", `translate(${margins.left - 10},${margins.top})`)
+            .call(leftA);
+          const radioScale = d3.scaleLinear().domain([0, 1]).range([chartHeight, 0]);
+          let rightA = d3.axisRight(radioScale);
+          svg.append('g')
+            .attr("class", "y axis")
+            .attr("transform", `translate(${margins.left + chartWidth + 10},${margins.top})`)
+            .call(rightA);
+          
+          let bottomA = d3.axisBottom(xScale).ticks(10);
+          let xAxis = svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", `translate(${margins.left},${chartHeight + margins.top + 10})`)
+            .call(bottomA);
 
-                    
-                    const xExtent = uniqueGenres; 
-                    console.log("Updated xExtent:", xExtent);
+          xAxis.selectAll("text")
+            .attr("transform", "rotate(-90)")
+            .attr("text-anchor", "end")
+            .attr("dx", "-0.5em");
 
-                    const xScale = d3.scaleBand().domain(xExtent).range([0, chartWidth]);
-                    console.log("xScale domain:", xScale.domain());
-                    const yExtent = d3.extent(genreData, d => d['backlogs'] );
-                    // const xScale = d3.scaleBand().domain(xExtent).range([0, chartWidth]);
-                    const yScale = d3.scaleLinear().domain(yExtent).range([chartHeight, 0]); 
-                    console.log("xExtent:", xExtent);
-                    console.log("xScale domain:", xScale.domain());
+          
+          chartArea.selectAll("rect.bar").data(genreDataFilter)
+            .join("rect")
+            .attr("x", d => xScale(d.genre))
+            .attr("y", d => yScale(d.backlogs))
+            .attr("width", xScale.bandwidth())
+            .attr("height", d => chartHeight - yScale(d.backlogs))
+            .attr("fill", function(d){
+              if(d.genre === 'Adventure') return '#1f77b4';
+              if(d.genre === 'RPG') return '#ff7f0e';
+              if(d.genre === 'Brawler') return '#e377c2';
+              if(d.genre === 'Indie') return '#9467bd';
+              if(d.genre === 'Shooter') return '#2ca02c';
+              if(d.genre === 'Platform') return '#d62728';
+              if(d.genre === 'Puzzle') return '#8c564b';
+              if(d.genre === 'Strategy') return '#7f7f7f';
+              if(d.genre === 'Simulator') return '#bcbd22';
+              if(d.genre === 'Turn Based Strategy') return '#17becf';
+            });
+          var lineGen = d3.line()
+                        .x( d => xScale(d.genre)+ xScale.bandwidth()/2 )
+                        .y( d => radioScale(d.radio) )
+                        .curve(d3.curveMonotoneX);
+          chartArea.append('path')
+                    .datum(genreDataFilter)
+                    .attr('class', 'line')
+                    .attr('fill', 'none')
+                    .attr('stroke', 'grey')
+                    .attr('stroke-width', 3)
+                    .attr('d', lineGen);
+          chartArea.selectAll('circle').data(genreDataFilter)
+                    .join('circle')
+                    .attr('r', 3)
+                    .attr('fill', 'black')
+                    .attr('cx', d=>xScale(d.genre) + xScale.bandwidth()/2)
+                    .attr('cy', d=>radioScale(d.radio));
+          svg.append("text")
+            .attr("class", "axis-label")
+            .attr("x", width / 2- 70)
+            .attr("y", height - margins.bottom / 2)
+            .attr("text-anchor", "middle")
+            .text("Genres");
 
-                    let leftA = d3.axisLeft(yScale);
-                    svg.append('g')
-                        .attr('class', 'y axis')
-                        .attr('transform',`translate(${margins.left-10},${margins.top})`) 
-                        .call(leftA);
+          svg.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -margins.top - chartHeight / 2)
+            .attr("y", margins.left / 2 - 30)
+            .attr("text-anchor", "middle")
+            .text("Backlogs");
+          svg.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -margins.top - chartHeight / 2-10)
+            .attr("y", margins.left +chartWidth +60)
+            .attr("text-anchor", "middle")
+            .text("Backlogs/(Backlogs+Playing)");
 
-                    let bottomA = d3.axisBottom(xScale)
-                    let xAxis = svg.append('g')
-                        .attr('class', 'x axis')
-                        .attr('transform',`translate(${margins.left},${chartHeight+margins.top+10})`)
-                        .call(bottomA);
 
-                    xAxis.selectAll("text")
-                    .attr("transform", "rotate(-90)") 
-                    .attr("text-anchor", "end") 
-                    .attr("dx", "-0.5em") 
-                    .attr("dy", "0.5em"); 
-                    
-                    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-                    console.log(genreData);
-                    chartArea.selectAll(".bar")
-                        .data(genreData)
-                        .enter()
-                        .append("rect")
-                        .attr("class", "bar")
-                        .attr("x", d => xScale(d.genre)) 
-                        .attr("y", d => yScale(d.backlogs)) 
-                        .attr("width", xScale.bandwidth()) 
-                        .attr("height", d => chartHeight - yScale(d.backlogs)) 
-                        .attr("fill", d => colorScale(d.genre)); 
-
-                    
-                    svg.append("text")
-                        .attr("class", "x-axis-title")
-                        .attr("x", width / 2)
-                        .attr("y", height - margins.bottom / 2)
-                        .attr("text-anchor", "middle")
-                        .text("Genres");
-
-                    
-                    svg.append("text")
-                        .attr("class", "y-axis-title")
-                        .attr("transform", "rotate(-90)") 
-                        .attr("x", - (height / 2) ) 
-                        .attr("y", margins.left / 3) 
-                        .attr("text-anchor", "middle")
-                        .text("Backlogs");
-
-                });
+        });
+      
+      
+                
             </script>
         </p>
     </body>
