@@ -23,7 +23,7 @@
     <br>
 
     <p id="p1">
-        <svg id="graph" height="800" width="900"></svg>
+        <svg id="graph" height="600" width="900"></svg>
     
         <script>
                 
@@ -75,6 +75,7 @@
                 .attr("cy", d => yScale(d['sales']))
                 .attr("r", 7)
                 .attr("opacity", function(d) {
+                    if (d.genre != "Action") return 0;
                     if (d.region==="North America") return 1.0;
                         if (d.region==="European Union") return 0.9;
                         if (d.region==="Japan") return 0.8;
@@ -105,8 +106,8 @@
                 .attr("r", 7)
                 .style("fill", function(d) {
                         if (d==="North America") return "#fe797b";
-                        if (d==="European Union") return "#5574ff";
-                        if (d==="Japan") return "#61e38c";
+                        if (d==="European Union") return "#ffb750";
+                        if (d==="Japan") return "#ffea56";
                         if (d==="Other") return "#8fe968";
                         if (d==="Worldwide") return "#36cedc";})
 
@@ -126,6 +127,11 @@
                         if (d==="Other") return "#8fe968";
                         if (d==="Worldwide") return "#36cedc";})
 
+
+                const line = d3.line()
+                .x((d) => x(d.release_year))
+                .y((d) => y(d.sales));
+                line(walk)
 
   
             // Adding title and axis labels       
