@@ -422,7 +422,7 @@
                 .datum(regionData)
                 .attr("class", "line")
                 .attr("stroke", color(region))
-                .style("stroke-width", 3)
+                .style("stroke-width", 4)
                 .attr("d", lineGen)
                 .attr("stroke-opacity", 0.4);
 
@@ -434,9 +434,9 @@
                 .attr("class", `dot-${region}`)
                 .attr("cx", (d) => xScale(d.release_year))
                 .attr("cy", (d) => yScale(d.genre))
-                .attr("r", 5)
+                .attr("r", 6)
                 .attr("fill", color(region))
-                .attr("opacity", 0.5);
+                .attr("opacity", 0.6);
             });
 
             // Group by release year to check if all regions have the same genre
