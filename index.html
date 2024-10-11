@@ -126,7 +126,8 @@
     </div>
     <div class="text-container">
       <p>
-        Add some text about your graph & connect your graph with the graph below
+        While lots of genres emerge over time, action games reign supreme in terms of sales. But how do
+        action games sell in specific regions, from the 80's to now?
       </p>
     </div>
     <div id="viz4" class="viz">
@@ -134,7 +135,9 @@
       <svg id="graph" height="800" width="900"></svg>
     </div>
     <div class="text-container">
-      <p>Add some text about your graph & summary for 4 graphs</p>
+      <p>Here, we can see that sales for action games go up worldwide as time passes, and that North
+        America leads in sales over both the EU and Japan.
+      </p>
     </div>
     <script>
       function drawVisualization1() {
@@ -587,8 +590,7 @@
 
         const width = svg.attr("width");
         const height = svg.attr("height");
-        const margin = { top: 10, right: 30, bottom: 30, left: 30 };
-
+        const margin = { top: 10, right: 30, bottom: 30, left: 40 };
         const chartWidth = width - margin.left - margin.right;
         const chartHeight = height - margin.top - margin.bottom;
 
@@ -640,6 +642,7 @@
             .attr("cy", (d) => yScale(d["sales"]))
             .attr("r", 7)
             .attr("opacity", function (d) {
+              if (d.release_year > 2016) return 0;
               if (d.region === "North America") return 1.0;
               if (d.region === "European Union") return 0.9;
               if (d.region === "Japan") return 0.8;
@@ -698,7 +701,7 @@
             .style("fill", function (d) {
               if (d === "North America") return "#fe797b";
               if (d === "European Union") return "#ffb750";
-              if (d === "Japan") return "#ffea56";
+              if (d === "Japan") return "#ecb753";
               if (d === "Other") return "#8fe968";
               if (d === "Worldwide") return "#36cedc";
             });
@@ -716,8 +719,7 @@
             .append("text")
             .attr("class", "axis-label")
             .attr("text-anchor", "end")
-            .attr("y", 25)
-            .attr("dy", ".75em") //idk what this means
+            .attr("y", 50)
             .attr("transform", "rotate(-90)")
             .text("Sales (millions)");
         });
