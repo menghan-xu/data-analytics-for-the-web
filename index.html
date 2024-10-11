@@ -467,7 +467,6 @@
       function drawVisualization3() {
         d3.csv("games_detail.csv", d3.autoType)
           .then((data) => {
-            
           let genreMap = {};
           data.forEach(row => {
             let genres = row.Genres.replace(/\[|\]|'/g, "")  //remove [ , ] and '
