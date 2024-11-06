@@ -1,0 +1,131 @@
+<html><head>
+    <title>INFO 5100 - Project 2</title>
+    
+    
+      <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
+      
+      <script src="https://d3js.org/d3.v7.min.js"></script>
+      <script src="https://d3js.org/topojson.v3.min.js"></script>
+      
+      <style>
+      
+        .neighborhood {
+          fill: none;
+          stroke: black;
+          stroke-width: 1px;
+        }
+        .outline {
+          fill: none;
+          stroke: black;
+          stroke-width: 1px;
+        }
+        .graticule {
+            fill: none;
+            stroke: grey;
+            stroke-width: 1px;
+        }
+        .tooltip {
+            pointer-events: none;
+        }
+      
+      
+    
+      </style>
+    
+    </head>
+    <body>
+      <div class="container larger">
+    
+    
+      <svg id="choropleth" height="700" width="900" style="background: #f5f9ee; margin-top:50px" >
+    
+      </svg>
+    
+      <svg id="colorLegend" height="100" width="600" style="background: #fff; margin-top:30px" >
+    
+      </svg>
+    
+
+      <script id="basicmap">
+    
+      const svg = d3.select("#choropleth");
+      const width = svg.attr("width");
+      const height = svg.attr("height");
+      const margin = { top: 20, right: 20, bottom: 20, left:20};
+      const mapWidth = width - margin.left - margin.right;
+      const mapHeight = height - margin.top - margin.bottom;
+      const map = svg.append("g")
+                      .attr("transform","translate("+margin.left+","+margin.top+")");
+                      
+
+      
+      // 1. An async function to load data and build the map
+      const requestData = async function() {
+      
+       
+        const nyctopo = await d3.json("nyctopo.json");
+        console.log(nyctopo);
+      
+        // 2b. Pick out topographic features and build d3 helpers
+        var nyfeatures = topojson.feature(nyctopo,nyctopo.objects.nyc)
+        var nymesh = topojson.mesh(nyctopo, nyctopo.objects.nyc);    // 'Mesh' of all outlines put together for a stroke
+        var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], nyfeatures);
+        var path = d3.geoPath().projection(projection);
+
+        // Linear gradient code is from https://stackoverflow.com/questions/35833781/d3-filling-an-area-with-a-gradient
+        var lg = map.append("defs").append("linearGradient")
+            .attr("id", "mygrad")//id of the gradient
+            .attr("x1", "0%")
+            .attr("x2", "0%")
+            .attr("y1", "0%")
+            .attr("y2", "100%")//since its a vertical linear gradient 
+            ;
+        lg.append("stop")
+            .attr("offset", "0%")
+            .style("stop-color", "#ff4e50")//end in red
+            .style("stop-opacity", 0.75)
+
+        lg.append("stop")
+            .attr("offset", "100%")
+            .style("stop-color", "#f9d62e")//start in blue
+            .style("stop-opacity", 0.6)
+        
+        // 2c. Draw states and outlines (see CSS at the top)
+        let nycPaths = map.selectAll("path.neighborhood").data(nyfeatures.features)
+                         .join("path")
+                         .attr("class", "neighborhood")
+                         .attr("d", path);
+      
+        map.append("path").datum(nymesh)
+           .attr("class","outline")
+           .attr("d", path);
+      
+        var colors = ["#ff4e50", "#fc913a", "#f9d62e", "#eae374", "#e2f4c7"];
+        var randomIndex = Math.floor(Math.random() * colors.length);
+        var randomColor = colors.splice(randomIndex, 1)[0];
+      
+        // 3d. Recolor the states to make a choropleth map
+        map.selectAll(".neighborhood")
+            .style("fill", "url(#mygrad)");
+      
+        // 3e. Use the extra legend code to draw a legend
+        drawLegend("#colorLegend", colorScale);
+      
+        
+       
+        
+      // END OF REQUESTDATA()
+      }
+      requestData();
+      
+      
+      
+      </script>
+      
+      
+    
+    
+      </div>
+    </body>
+    </html>
+    
