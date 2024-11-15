@@ -17,15 +17,14 @@
         .outline {
           fill: none;
           stroke: black;
-          stroke-width: 1px;
-        }
-        .graticule {
-            fill: none;
-            stroke: grey;
-            stroke-width: 1px;
+          stroke-width: 0.5px;
         }
         .tooltip {
             pointer-events: none;
+        }
+        .label {
+          font-style: normal;
+          font-family: Arial, Helvetica, sans-serif;
         }
       
       
@@ -37,11 +36,11 @@
       <div class="container larger">
     
     
-      <svg id="choropleth" height="700" width="900" style="background: #f5f9ee; margin-top:50px" >
+      <svg id="choropleth" height="700" width="1200" style="background: #f5f9ee; margin-top:50px" >
     
       </svg>
     
-      <svg id="colorLegend" height="100" width="600" style="background: #fff; margin-top:30px" >
+     
     
       </svg>
     
@@ -51,46 +50,33 @@
       const svg = d3.select("#choropleth");
       const width = svg.attr("width");
       const height = svg.attr("height");
-      const margin = { top: 20, right: 20, bottom: 20, left:20};
+      const margin = { top: 20, right: 250, bottom: 20, left:20};
       const mapWidth = width - margin.left - margin.right;
       const mapHeight = height - margin.top - margin.bottom;
       const map = svg.append("g")
                       .attr("transform","translate("+margin.left+","+margin.top+")");
-                      
+      
 
       
-      // 1. An async function to load data and build the map
+      // async function to load data and build the map
       const requestData = async function() {
+
+ 
+
+        
       
        
         const nyctopo = await d3.json("nyctopo.json");
         console.log(nyctopo);
       
-        // 2b. Pick out topographic features and build d3 helpers
+        // pick out topographic features and build d3 helpers
         var nyfeatures = topojson.feature(nyctopo,nyctopo.objects.nyc)
         var nymesh = topojson.mesh(nyctopo, nyctopo.objects.nyc);    // 'Mesh' of all outlines put together for a stroke
         var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], nyfeatures);
         var path = d3.geoPath().projection(projection);
 
-        // Linear gradient code is from https://stackoverflow.com/questions/35833781/d3-filling-an-area-with-a-gradient
-        var lg = map.append("defs").append("linearGradient")
-            .attr("id", "mygrad")//id of the gradient
-            .attr("x1", "0%")
-            .attr("x2", "0%")
-            .attr("y1", "0%")
-            .attr("y2", "100%")//since its a vertical linear gradient 
-            ;
-        lg.append("stop")
-            .attr("offset", "0%")
-            .style("stop-color", "#ff4e50")//end in red
-            .style("stop-opacity", 0.75)
-
-        lg.append("stop")
-            .attr("offset", "100%")
-            .style("stop-color", "#f9d62e")//start in blue
-            .style("stop-opacity", 0.6)
         
-        // 2c. Draw states and outlines (see CSS at the top)
+        // drawing neighborhoods and outlines
         let nycPaths = map.selectAll("path.neighborhood").data(nyfeatures.features)
                          .join("path")
                          .attr("class", "neighborhood")
@@ -100,18 +86,246 @@
            .attr("class","outline")
            .attr("d", path);
       
-        var colors = ["#ff4e50", "#fc913a", "#f9d62e", "#eae374", "#e2f4c7"];
-        var randomIndex = Math.floor(Math.random() * colors.length);
-        var randomColor = colors.splice(randomIndex, 1)[0];
-      
-        // 3d. Recolor the states to make a choropleth map
-        map.selectAll(".neighborhood")
-            .style("fill", "url(#mygrad)");
-      
-        // 3e. Use the extra legend code to draw a legend
-        drawLegend("#colorLegend", colorScale);
-      
+
+        let boro_colors2 = ["#6e40aa","#d23ea7","#ff5e63","#efa72f","#aff05b"]
+        let boro_colors = {
+          manhattan: "#6e40aa",
+          bronx: "#d23ea7",
+          queens: "#ff5e63",
+          brooklyn: "#efa72f",
+          staten_island: "#aff05b"
+        }
         
+
+        // filling the each neighborhood w the gradient
+        map.selectAll(".neighborhood")
+            .style("fill", function (d) {
+              let boroName = d.properties.BoroName;
+              if(boroName === "Manhattan"){ return "#6e40aa";}
+              if(boroName === "Bronx"){ return "#d23ea7";}
+              if(boroName === "Queens"){ return "#ff5e63";}
+              if(boroName === "Brooklyn"){ return "#efa72f";}
+              if(boroName === "Staten Island"){ return "#aff05b";}
+              });
+      
+
+
+
+
+        // Pan and zoom
+
+        var zoom = d3.zoom()
+          .scaleExtent([1, 20])
+          .translateExtent([[-50, -50], [mapWidth + 50, mapHeight + 50]])  // to lock to edges
+          .on("zoom", mapZoomed);
+
+        svg.call(zoom);
+        svg.call(zoom.transform, d3.zoomIdentity);
+
+
+        function mapZoomed({transform}) {    
+
+          map.attr("transform", transform.toString() );
+        
+          map.select(".outline")
+                    .attr("visibility", (transform.k > 3) ? "visible" : "hidden");
+          // map.selectAll(".neighborhood")
+          //           .attr("visibility", (transform.k > 3) ? "visible" : "hidden");
+  
+      }
+
+
+      d3.csv('nyc_rest_inspect_filtered.csv').then((data) => {         
+
+        console.log("imported")
+
+        let rest_objs = [];
+
+        // Create a smaller restaurant object with only the relevant data
+        data.forEach( d => {  // data cleanup
+                var dba = d['DBA'];
+                var boro = d['BORO'];
+                var cuisine = d['CUISINE DESCRIPTION']
+                var grade = d['GRADE'];
+                var lat = d['Latitude'];
+                var long = d['Longitude'];
+                var violation = d['VIOLATION DESCRIPTION']
+                var rest = {
+                  name: dba,
+                  boro: boro,
+                  cuisine: cuisine,
+                  grade: grade,
+                  lat: lat,
+                  long: long,
+                  violation: violation
+                };
+                rest_objs.push(rest);
+            });
+
+
+        let circles = map.selectAll("circle")  //select all circle elements
+            .data(rest_objs)
+            .join("circle") //does all the updating and such for you
+            .attr("r", function (d) {
+              if(d['boro'] === "Manhattan"){  // make the manhattan dots smaller since there's so many
+                return 2;
+              }
+              else{
+                return 3;
+              }
+            })
+            .attr("cx", function (d) {
+              var xpos = d.long;
+              var ypos = d.lat;
+              var circlePosition = projection( [xpos,  ypos] );
+              if(xpos === null || ypos === null || circlePosition === null){
+                return;
+              }
+              return circlePosition[0];
+            }) 
+            .attr("cy", function (d) {
+              var xpos = d.long;
+              var ypos = d.lat;
+              var circlePosition = projection( [xpos,  ypos] );
+              if(xpos === null || ypos === null || circlePosition === null){
+                return;
+              }
+              return circlePosition[1];
+            })
+            .attr("fill", "black")  
+                
+      
+          circles.on("mouseover", function () { // first argument is always a string for the event. second arg for us is a function
+
+            d3.select(this)
+              .transition()
+              .duration(500)
+              .attr("stroke", "black")  
+              .attr("r", 6)
+
+            // Getting variables to build the labels
+            let name = d3.select(this).datum()['name']
+            let boro = d3.select(this).datum()['boro']
+            let cuisine = d3.select(this).datum()['cuisine']
+            let grade = d3.select(this).datum()['grade']
+            let violation = d3.select(this).datum()['violation']
+            let lat = d3.select(this).datum()['lat']
+            let long = d3.select(this).datum()['long']
+            let text_pos = projection( [long,  lat] );
+
+            let name_string = `Restaurant Name: ${name}`;
+            let boro_string =  `Borough: ${boro}`;
+            let cuisine_string = `Cuisine: ${cuisine}`;
+            let grade_string = `Grade (Rating): ${grade}`;
+            let violation_string = `Violation Description: ${violation}`;
+
+            // Appending all the text
+
+
+           map.append("rect")
+             .attr("class", "rect")
+             .attr("x", text_pos[0])
+             .attr("y", text_pos[1]-20)
+             .attr('width', 400)
+             .attr('height', 90)
+             .attr('stroke', 'black')
+             .style("fill", function (d) {
+            
+              if(boro === "Manhattan"){ return "#936ec4";}
+              if(boro === "Bronx"){ return "#cf69b1";}
+              if(boro === "Queens"){ return "#ff8286";}
+              if(boro === "Brooklyn"){ return "#f2ba5c";}
+              if(boro === "Staten Island"){ return "#cff79c";}
+              });
+
+            map.append("text")
+              .attr("class", "label")
+              .attr("x", text_pos[0] + 5)
+              .attr("y", text_pos[1])
+              .attr("text-anchor", "start")
+              .text(name_string);
+
+            map.append("text")
+              .attr("class", "label")
+              .attr("x", text_pos[0] + 5)
+              .attr("y", text_pos[1] + 20)
+              .attr("text-anchor", "start")
+              .text(boro_string);
+
+            map.append("text")
+              .attr("class", "label")
+              .attr("x", text_pos[0] + 5)
+              .attr("y", text_pos[1] + 40)
+              .attr("text-anchor", "start")
+              .text(cuisine_string);
+
+            map.append("text")
+              .attr("class", "label")
+              .attr("x", text_pos[0] + 5)
+              .attr("y", text_pos[1] + 60)
+              .attr("text-anchor", "start")
+              .text(grade_string);
+
+            // map.append("text")
+            //   .attr("class", "label")
+            //   .attr("x", text_pos[0])
+            //   .attr("y", 100)
+            //   .attr("text-anchor", "start")
+            //   .text(violation_string);
+
+
+          })
+
+
+          // Mouseout, then undo what we did before
+          circles.on("mouseout", function () { // first argument is always a string for the event. second arg for us is a function
+
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr("stroke-width", 0)
+              .attr("stroke", "none")
+              .attr("r", function (d) {
+              if(d['boro'] === "Manhattan"){
+                return 2;
+              }
+              else{
+                return 3;
+              }
+            })
+
+
+            map.selectAll(".label")
+              .attr("opacity", 0);
+
+            map.selectAll(".rect")
+             .attr('width', 0)
+             .attr('height', 0)
+             .attr('stroke', 'none')
+             .attr('fill', 'none');
+          }) 
+
+
+        })
+
+
+
+        
+        
+      
+         
+         
+
+
+
+
+
+
+
+
+
+      // });
+     
        
         
       // END OF REQUESTDATA()
