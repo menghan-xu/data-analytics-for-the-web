@@ -42,7 +42,18 @@
     
      
     
-      </svg>
+        <!-- Filter dropdown menus -->
+    <div class="filter">
+      <label for="boroFilter">Boro:</label>
+      <select id="boroFilter">
+          <option value="All">All</option>
+      </select>
+
+      <label for="scoreFilter">Score:</label>
+      <select id="scoreFilter">
+          <option value="All">All</option>
+      </select>
+  </div>
     
 
       <script id="basicmap">
@@ -57,17 +68,18 @@
                       .attr("transform","translate("+margin.left+","+margin.top+")");
       
 
+       // Variables for filters
+      let selectedBoro = "All";
+      let selectedScore = "All";
+
       
       // async function to load data and build the map
       const requestData = async function() {
 
- 
-
-        
       
        
         const nyctopo = await d3.json("nyctopo.json");
-        console.log(nyctopo);
+
       
         // pick out topographic features and build d3 helpers
         var nyfeatures = topojson.feature(nyctopo,nyctopo.objects.nyc)
@@ -129,24 +141,38 @@
         
           map.select(".outline")
                     .attr("visibility", (transform.k > 3) ? "visible" : "hidden");
-          // map.selectAll(".neighborhood")
-          //           .attr("visibility", (transform.k > 3) ? "visible" : "hidden");
-  
+        
       }
 
 
+      // Using the data from the CSV
       d3.csv('nyc_rest_inspect_filtered.csv').then((data) => {         
 
         console.log("imported")
 
+        const scores = ['A', 'B', 'C', 'N', 'Z'];
+
+        const boros = ['Manhattan', 'Queens', 'Brooklyn', 'Bronx', 'Staten Island'];
+
+        // adding options to the dropdowns
+        boros.forEach(boro => {
+              d3.select("#boroFilter").append("option").text(boro).attr("value", boro);
+          });
+
+        scores.forEach(score => {
+            d3.select("#scoreFilter").append("option").text(score).attr("value", score);
+        });
+
+
         let rest_objs = [];
+
 
         // Create a smaller restaurant object with only the relevant data
         data.forEach( d => {  // data cleanup
                 var dba = d['DBA'];
                 var boro = d['BORO'];
                 var cuisine = d['CUISINE DESCRIPTION']
-                var grade = d['GRADE'];
+                var score = d['GRADE'];
                 var lat = d['Latitude'];
                 var long = d['Longitude'];
                 var violation = d['VIOLATION DESCRIPTION']
@@ -154,7 +180,7 @@
                   name: dba,
                   boro: boro,
                   cuisine: cuisine,
-                  grade: grade,
+                  score: score,
                   lat: lat,
                   long: long,
                   violation: violation
@@ -163,9 +189,17 @@
             });
 
 
-        let circles = map.selectAll("circle")  //select all circle elements
-            .data(rest_objs)
-            .join("circle") //does all the updating and such for you
+        
+        const updateMap = () => {
+            map.selectAll("circle").remove(); 
+            let circles = map.selectAll("circle")  //select all circle elements
+            .data(rest_objs.filter(d => {
+              console.log(selectedBoro)
+                       const boroMatch = selectedBoro === "All" || d['boro'] === selectedBoro;
+                       const ratingMatch = selectedScore === "All" || d['score'] === selectedScore;
+                       return boroMatch && ratingMatch;
+                   }))
+            .join("circle") 
             .attr("r", function (d) {
               if(d['boro'] === "Manhattan"){  // make the manhattan dots smaller since there's so many
                 return 2;
@@ -193,49 +227,56 @@
               return circlePosition[1];
             })
             .attr("fill", "black")  
-                
-      
+           
+            
+        
+
+
+
+
           circles.on("mouseover", function () { // first argument is always a string for the event. second arg for us is a function
 
             d3.select(this)
               .transition()
               .duration(500)
-              .attr("stroke", "black")  
+              .attr("stroke", "black")
               .attr("r", 6)
 
             // Getting variables to build the labels
             let name = d3.select(this).datum()['name']
             let boro = d3.select(this).datum()['boro']
             let cuisine = d3.select(this).datum()['cuisine']
-            let grade = d3.select(this).datum()['grade']
+            let score = d3.select(this).datum()['score']
             let violation = d3.select(this).datum()['violation']
             let lat = d3.select(this).datum()['lat']
             let long = d3.select(this).datum()['long']
-            let text_pos = projection( [long,  lat] );
+            let text_pos = projection([long, lat]);
 
             let name_string = `Restaurant Name: ${name}`;
-            let boro_string =  `Borough: ${boro}`;
+            let boro_string = `Borough: ${boro}`;
             let cuisine_string = `Cuisine: ${cuisine}`;
-            let grade_string = `Grade (Rating): ${grade}`;
+            let score_string = `Grade (Rating): ${score}`;
             let violation_string = `Violation Description: ${violation}`;
 
+            
             // Appending all the text
 
 
-           map.append("rect")
-             .attr("class", "rect")
-             .attr("x", text_pos[0])
-             .attr("y", text_pos[1]-20)
-             .attr('width', 400)
-             .attr('height', 90)
-             .attr('stroke', 'black')
-             .style("fill", function (d) {
-            
-              if(boro === "Manhattan"){ return "#936ec4";}
-              if(boro === "Bronx"){ return "#cf69b1";}
-              if(boro === "Queens"){ return "#ff8286";}
-              if(boro === "Brooklyn"){ return "#f2ba5c";}
-              if(boro === "Staten Island"){ return "#cff79c";}
+            map.append("rect")
+              .attr("class", "rect")
+              .attr("x", text_pos[0])
+              .attr("y", text_pos[1] - 20)
+              .attr('width', 400)
+              .attr('height', 90)
+              .attr('stroke', 'black')
+              .style("fill", function (d) {
+
+                if (boro === "Manhattan") { return "#936ec4"; }
+                if (boro === "Bronx") { return "#cf69b1"; }
+                if (boro === "Queens") { return "#ff8286"; }
+                if (boro === "Brooklyn") { return "#f2ba5c"; }
+                if (boro === "Staten Island") { return "#cff79c"; }
+
               });
 
             map.append("text")
@@ -264,7 +305,7 @@
               .attr("x", text_pos[0] + 5)
               .attr("y", text_pos[1] + 60)
               .attr("text-anchor", "start")
-              .text(grade_string);
+              .text(score_string);
 
             // map.append("text")
             //   .attr("class", "label")
@@ -274,7 +315,7 @@
             //   .text(violation_string);
 
 
-          })
+          })  // end of on mouseover
 
 
           // Mouseout, then undo what we did before
@@ -286,27 +327,84 @@
               .attr("stroke-width", 0)
               .attr("stroke", "none")
               .attr("r", function (d) {
-              if(d['boro'] === "Manhattan"){
-                return 2;
-              }
-              else{
-                return 3;
-              }
-            })
+                if (d['boro'] === "Manhattan") {
+                  return 2;
+                }
+                else {
+                  return 3;
+                }
+              })
 
 
             map.selectAll(".label")
               .attr("opacity", 0);
 
             map.selectAll(".rect")
-             .attr('width', 0)
-             .attr('height', 0)
-             .attr('stroke', 'none')
-             .attr('fill', 'none');
-          }) 
+              .attr('width', 0)
+              .attr('height', 0)
+              .attr('stroke', 'none')
+              .attr('fill', 'none');
+          }) // end of mouseout
 
 
-        })
+        };  // END OF UPDATE MAP FUNCTION
+
+            
+        updateMap();
+
+        // filter
+        d3.select("#boroFilter").on("change", function () {
+            selectedBoro = this.value;
+            console.log(selectedBoro)
+            updateMap();
+        });
+
+        d3.select("#scoreFilter").on("change", function () {
+            selectedScore = this.value;
+            console.log(selectedScore)
+            updateMap();
+        });
+
+
+        }).catch(error => console.error("Error loading data:", error)); //end of data fetching
+          
+
+        // let circles = map.selectAll("circle")  //select all circle elements
+        //     .data(rest_objs)
+        //     .join("circle") //does all the updating and such for you
+        //     .attr("r", function (d) {
+        //       if(d['boro'] === "Manhattan"){  // make the manhattan dots smaller since there's so many
+        //         return 2;
+        //       }
+        //       else{
+        //         return 3;
+        //       }
+        //     })
+        //     .attr("cx", function (d) {
+        //       var xpos = d.long;
+        //       var ypos = d.lat;
+        //       var circlePosition = projection( [xpos,  ypos] );
+        //       if(xpos === null || ypos === null || circlePosition === null){
+        //         return;
+        //       }
+        //       return circlePosition[0];
+        //     }) 
+        //     .attr("cy", function (d) {
+        //       var xpos = d.long;
+        //       var ypos = d.lat;
+        //       var circlePosition = projection( [xpos,  ypos] );
+        //       if(xpos === null || ypos === null || circlePosition === null){
+        //         return;
+        //       }
+        //       return circlePosition[1];
+        //     })
+        //     .attr("fill", "black")  
+                
+      
+
+
+
+        } // end of request data 
 
 
 
@@ -329,7 +427,7 @@
        
         
       // END OF REQUESTDATA()
-      }
+      
       requestData();
       
       
