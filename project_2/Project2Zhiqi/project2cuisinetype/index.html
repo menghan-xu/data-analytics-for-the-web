@@ -3,6 +3,54 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
     <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+        }
+        .filter {
+            margin: 10px;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            overflow: hidden; 
+        }
+        #map {
+            flex: 3;
+            max-width: 800px;
+            height: 600px;
+            overflow: hidden; 
+            border: 1px solid #ccc;
+        }
+        svg {
+            width: 100%; 
+            height: 100%; 
+        }
+        #legend {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            background-color: #f9f9f9;
+            border-left: 1px solid #ccc;
+            max-height: 600px; 
+            overflow-y: auto; 
+        }
+        .legend-item {
+            margin-bottom: 5px;
+        }
+        .legend-rect {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 5px;
+            border: 1px solid black;
+        }
         .tooltip {
             position: absolute;
             background-color: white;
@@ -16,18 +64,6 @@
             cursor: pointer;
             stroke: black;
             stroke-width: 0.5px;
-        }
-        .filter {
-            margin: 10px;
-        }
-        .legend {
-            font-size: 14px;
-        }
-        .legend-rect {
-            width: 15px;
-            height: 15px;
-            display: inline-block;
-            margin-right: 5px;
         }
     </style>
 </head>
@@ -46,60 +82,77 @@
             <option value="All">All</option>
         </select>
 
-        <label for="ratingFilter">Rating:</label>
-        <select id="ratingFilter">
-            <option value="All">All</option>
-        </select>
+        <!-- Rating slider -->
+        <label for="ratingSlider">Rating:</label>
+        <input type="range" id="ratingSlider" min="1" max="5" step="0.1" value="5" style="width: 200px;">
+        <span id="ratingValue">5.0</span>
     </div>
 
-    <!-- Legend for Restaurant Type Colors -->
-    <div id="legend" class="legend"></div>
+    <div class="container">
+        <!-- Map Container -->
+        <div id="map">
+            <svg>
+                <g id="mapContent"></g> 
+            </svg>
+        </div>
 
-    <div id="map"></div>
+        <!-- Legend Container -->
+        <div id="legend"></div>
+    </div>
+
     <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
 
     <script>
-        const width = 1600, height = 1200;
-        const svg = d3.select("#map")
-                      .append("svg")
-                      .attr("width", width)
-                      .attr("height", height);
-
+        const svg = d3.select("svg");
+        const mapContent = d3.select("#mapContent"); 
         const tooltip = d3.select("#tooltip");
 
         // Variables for filters
         let selectedType = "All";
         let selectedPrice = "All";
-        let selectedRating = "All";
+        let maxRating = 5;
+
+        // zoom in and out
+        const zoom = d3.zoom()
+            .scaleExtent([1, 8]) 
+            .on("zoom", (event) => {
+                mapContent.attr("transform", event.transform);
+            });
+
+        svg.call(zoom); 
 
         // Load TopoJSON and Restaurant Data
         Promise.all([
-            d3.json("nyctopo.json"), // when load it make sure its in th same file
+            d3.json("nyctopo.json"), 
             d3.csv("restaurant_final.csv") 
         ]).then(([nycGeoData, restaurantData]) => {
-            const featureKey = Object.keys(nycGeoData.objects)[0]; 
+            const featureKey = Object.keys(nycGeoData.objects)[0];
 
             const projection = d3.geoMercator()
                 .center([-73.94, 40.70])
-                .translate([width / 2, height / 2])
+                .translate([400, 300]) 
                 .scale(120000);
 
             const path = d3.geoPath().projection(projection);
 
-            // Map
-            svg.selectAll("path")
-               .data(topojson.feature(nycGeoData, nycGeoData.objects[featureKey]).features)
-               .enter()
-               .append("path")
-               .attr("d", path)
-               .attr("fill", "#ccc")
-               .attr("stroke", "#333");
+            // Map for nyc and surrounded
+            mapContent.selectAll("path")
+                      .data(topojson.feature(nycGeoData, nycGeoData.objects[featureKey]).features)
+                      .enter()
+                      .append("path")
+                      .attr("d", path)
+                      .attr("fill", "#ccc")
+                      .attr("stroke", "#333");
 
-            // colours
+            // Colours 
             const types = [...new Set(restaurantData.map(d => d.restaurant_type))];
-            const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(types);
+            const colorMap = {};
+            types.forEach((type, i) => {
+                const hue = (i * 360 / types.length) % 360;
+                colorMap[type] = `hsl(${hue}, 70%, 50%)`;
+            });
 
-            //Filter
+            // Filter
             types.forEach(type => {
                 d3.select("#typeFilter").append("option").text(type).attr("value", type);
             });
@@ -109,54 +162,46 @@
                 d3.select("#priceFilter").append("option").text(price).attr("value", price);
             });
 
-            const ratings = [...new Set(restaurantData.map(d => d.food_review))];
-            ratings.forEach(rating => {
-                d3.select("#ratingFilter").append("option").text(rating).attr("value", rating);
-            });
-
-            // add legends
+            // Legend
             const legend = d3.select("#legend");
             types.forEach(type => {
-                const color = colorScale(type);
                 legend.append("div")
-                      .style("background-color", color)
-                      .attr("class", "legend-rect");
-                legend.append("span").text(type);
-                legend.append("br");
+                      .attr("class", "legend-item")
+                      .html(`<div class="legend-rect" style="background-color:${colorMap[type]}"></div>${type}`);
             });
 
-            // resturant coordinate
+            // Coordinate 
             const updateMap = () => {
-                svg.selectAll(".restaurant-circle").remove(); 
-                svg.selectAll(".restaurant-circle")
-                   .data(restaurantData.filter(d => {
-                       const typeMatch = selectedType === "All" || d.restaurant_type === selectedType;
-                       const priceMatch = selectedPrice === "All" || d.price_range === selectedPrice;
-                       const ratingMatch = selectedRating === "All" || d.food_review === selectedRating;
-                       return typeMatch && priceMatch && ratingMatch;
-                   }))
-                   .enter()
-                   .append("circle")
-                   .attr("class", "restaurant-circle")
-                   .attr("cx", d => projection([+d.longitude, +d.latitude])[0])
-                   .attr("cy", d => projection([+d.longitude, +d.latitude])[1])
-                   .attr("r", 5)
-                   .attr("fill", d => colorScale(d.restaurant_type)) // give colurs for 
-                   .on("mouseover", function (event, d) {
-                       tooltip.transition().duration(200).style("opacity", 1);
-                       tooltip.html(`<b>${d.name}</b><br>${d.restaurant_type}<br>${d.street_address}`)
-                              .style("left", (event.pageX + 10) + "px")
-                              .style("top", (event.pageY - 20) + "px");
-                   })
-                   .on("mouseout", () => {
-                       tooltip.transition().duration(200).style("opacity", 0);
-                   });
+                mapContent.selectAll(".restaurant-circle").remove();
+                mapContent.selectAll(".restaurant-circle")
+                          .data(restaurantData.filter(d => {
+                              const typeMatch = selectedType === "All" || d.restaurant_type === selectedType;
+                              const priceMatch = selectedPrice === "All" || d.price_range === selectedPrice;
+                              const ratingMatch = parseFloat(d.food_review) <= maxRating;
+                              return typeMatch && priceMatch && ratingMatch;
+                          }))
+                          .enter()
+                          .append("circle")
+                          .attr("class", "restaurant-circle")
+                          .attr("cx", d => projection([+d.longitude, +d.latitude])[0])
+                          .attr("cy", d => projection([+d.longitude, +d.latitude])[1])
+                          .attr("r", 5)
+                          .attr("fill", d => colorMap[d.restaurant_type])
+                          .on("mouseover", function (event, d) {
+                              tooltip.transition().duration(200).style("opacity", 1);
+                              tooltip.html(`<b>${d.name}</b><br>${d.restaurant_type}<br>${d.street_address}`)
+                                     .style("left", (event.pageX + 10) + "px")
+                                     .style("top", (event.pageY - 20) + "px");
+                          })
+                          .on("mouseout", () => {
+                              tooltip.transition().duration(200).style("opacity", 0);
+                          });
             };
 
-            
+            // Initial drawing
             updateMap();
 
-            // filter
+            // Filter
             d3.select("#typeFilter").on("change", function () {
                 selectedType = this.value;
                 updateMap();
@@ -165,8 +210,9 @@
                 selectedPrice = this.value;
                 updateMap();
             });
-            d3.select("#ratingFilter").on("change", function () {
-                selectedRating = this.value;
+            d3.select("#ratingSlider").on("input", function () {
+                maxRating = parseFloat(this.value);
+                d3.select("#ratingValue").text(maxRating.toFixed(1));
                 updateMap();
             });
         }).catch(error => console.error("Error loading data:", error));
