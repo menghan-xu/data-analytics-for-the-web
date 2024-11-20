@@ -134,16 +134,6 @@
                 .translate([400, 300]) 
                 .scale(120000);
 
-            // const path = d3.geoPath().projection(projection);
-
-            // Map for nyc and surrounded
-            // mapContent.selectAll("path")
-            //           .data(topojson.feature(nycGeoData, nycGeoData.objects[featureKey]).features)
-            //           .enter()
-            //           .append("path")
-            //           .attr("d", path)
-            //           .attr("fill", "#ccc")
-            //           .attr("stroke", "#333");
 
             // pick out topographic features and build d3 helpers
             var nyfeatures = topojson.feature(nyctopo,nyctopo.objects.nyc)
@@ -163,14 +153,6 @@
             .attr("d", path)
             .style("fill", "none");
 
-            let boro_colors2 = ["#ae6f8a","#6c8ca3","#e7b41b","#9da140","#cd7229"]
-            let boro_colors = {
-            manhattan: "#ae6f8a",
-            bronx: "#6c8ca3",
-            queens: "#e7b41b",
-            brooklyn: "#9da140",
-            staten_island: "#cd7229"
-            }
         
             // filling the each neighborhood w the gradient
             mapContent.selectAll(".neighborhood")
