@@ -11,8 +11,8 @@
       
         .neighborhood {
           fill: none;
-          stroke: black;
-          stroke-width: 1px;
+          stroke: white;
+          stroke-width: 0.5 px;
         }
         .outline {
           fill: none;
@@ -20,7 +20,13 @@
           stroke-width: 0.5px;
         }
         .tooltip {
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 5px;
             pointer-events: none;
+            font-size: 12px;
+            border-radius: 5px;
         }
         .label {
           font-style: normal;
@@ -83,6 +89,18 @@
                       .attr("transform","translate("+margin.left+","+margin.top+")");
       
 
+<<<<<<< Updated upstream
+=======
+       // Variables for filters
+      let selectedBoro = "All";
+      let selectedScore = "All";
+
+
+      // Tooltip variables
+      let tooltipWidth = 220;
+      let tooltipHeight = 80;
+      
+>>>>>>> Stashed changes
       
       // async function to load data and build the map
       const requestData = async function() {
@@ -111,32 +129,19 @@
         map.append("path").datum(nymesh)
            .attr("class","outline")
            .attr("d", path);
-      
-
-        let boro_colors2 = ["#6e40aa","#d23ea7","#ff5e63","#efa72f","#aff05b"]
-        let boro_colors = {
-          manhattan: "#6e40aa",
-          bronx: "#d23ea7",
-          queens: "#ff5e63",
-          brooklyn: "#efa72f",
-          staten_island: "#aff05b"
-        }
         
 
-        // filling the each neighborhood w the gradient
+        // filling the each neighborhood w the right color
         map.selectAll(".neighborhood")
             .style("fill", function (d) {
               let boroName = d.properties.BoroName;
-              if(boroName === "Manhattan"){ return "#6e40aa";}
-              if(boroName === "Bronx"){ return "#d23ea7";}
-              if(boroName === "Queens"){ return "#ff5e63";}
-              if(boroName === "Brooklyn"){ return "#efa72f";}
-              if(boroName === "Staten Island"){ return "#aff05b";}
+              if(boroName === "Manhattan"){ return "#AE6F8A";}
+              if(boroName === "Bronx"){ return "#6C8CA3";}
+              if(boroName === "Queens"){ return "#E7B41B";}
+              if(boroName === "Brooklyn"){ return "#9DA140";}
+              if(boroName === "Staten Island"){ return "#CD7229";}
               });
       
-
-
-
 
         // Pan and zoom
 
@@ -332,13 +337,53 @@
 
 
 
-        
+          // Getting the tooltip ready
+
+          let tooltip = map.append("g")
+            .attr("class", "tooltip")
+            .attr("visibility", "hidden");
+          tooltip.append("rect")
+            .attr("fill", "white")
+            .attr('stroke', 'black')
+            .attr("opacity", 0.9)
+            .attr("x", -tooltipWidth / 2.0)
+            .attr("y", 0)
+            .attr("width", tooltipWidth)
+            .attr("height", tooltipHeight)
+
+          let tooltip_name = tooltip.append("text")
+            .attr("fill", "black")
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "hanging")
+            .attr("x", 0)
+            .attr("y", 5);
+
+          let tooltip_boro = tooltip.append("text")
+            .attr("fill", "black")
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "hanging")
+            .attr("x", 0)
+            .attr("y", 25);
 
 
+          let tooltip_cuisine = tooltip.append("text")
+            .attr("fill", "black")
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "hanging")
+            .attr("x", 0)
+            .attr("y", 45);
+
+          let tooltip_score = tooltip.append("text")
+            .attr("fill", "black")
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "hanging")
+            .attr("x", 0)
+            .attr("y", 65);
 
 
           circles.on("mouseover", function () { // first argument is always a string for the event. second arg for us is a function
 
+            tooltip.style("visibility","visible")
             d3.select(this)
               .transition()
               .duration(500)
@@ -361,6 +406,7 @@
             let grade_string = `Grade (Rating): ${grade}`;
             let violation_string = `Violation Description: ${violation}`;
 
+<<<<<<< Updated upstream
             // Appending all the text
 
 
@@ -379,40 +425,71 @@
               if(boro === "Brooklyn"){ return "#f2ba5c";}
               if(boro === "Staten Island"){ return "#cff79c";}
               });
+=======
 
-            map.append("text")
-              .attr("class", "label")
-              .attr("x", text_pos[0] + 5)
-              .attr("y", text_pos[1])
-              .attr("text-anchor", "start")
-              .text(name_string);
+            tooltip.attr("transform",`translate(${text_pos[0]},${text_pos[1]})`);
 
-            map.append("text")
-              .attr("class", "label")
-              .attr("x", text_pos[0] + 5)
-              .attr("y", text_pos[1] + 20)
-              .attr("text-anchor", "start")
-              .text(boro_string);
+            tooltip_name.text(name);
+            tooltip_boro.text(boro_string);
+            tooltip_cuisine.text(cuisine_string);
+            tooltip_score.text(score_string);
+          
+            // Appending all the text
 
-            map.append("text")
-              .attr("class", "label")
-              .attr("x", text_pos[0] + 5)
-              .attr("y", text_pos[1] + 40)
-              .attr("text-anchor", "start")
-              .text(cuisine_string);
+>>>>>>> Stashed changes
 
-            map.append("text")
-              .attr("class", "label")
-              .attr("x", text_pos[0] + 5)
-              .attr("y", text_pos[1] + 60)
-              .attr("text-anchor", "start")
-              .text(score_string);
+            // map.append("rect")
+            //   .attr("class", "rect")
+            //   .attr("x", text_pos[0])
+            //   .attr("y", text_pos[1] - 20)
+            //   .attr('width', 400)
+            //   .attr('height', 90)
+            //   .attr('stroke', 'black')
+            //   .style("fill", function (d) {
+
+            //     if (boro === "Manhattan") { return "#936ec4"; }
+            //     if (boro === "Bronx") { return "#cf69b1"; }
+            //     if (boro === "Queens") { return "#ff8286"; }
+            //     if (boro === "Brooklyn") { return "#f2ba5c"; }
+            //     if (boro === "Staten Island") { return "#cff79c"; }
+
+            //   });
+
+            // map.append("text")
+            //   .attr("class", "label")
+            //   .attr("x", text_pos[0] + 5)
+            //   .attr("y", text_pos[1])
+            //   .attr("text-anchor", "start")
+            //   .text(name_string);
+
+            // map.append("text")
+            //   .attr("class", "label")
+            //   .attr("x", text_pos[0] + 5)
+            //   .attr("y", text_pos[1] + 20)
+            //   .attr("text-anchor", "start")
+            //   .text(boro_string);
+
+            // map.append("text")
+            //   .attr("class", "label")
+            //   .attr("x", text_pos[0] + 5)
+            //   .attr("y", text_pos[1] + 40)
+            //   .attr("text-anchor", "start")
+            //   .text(cuisine_string);
+
+            // map.append("text")
+            //   .attr("class", "label")
+            //   .attr("x", text_pos[0] + 5)
+            //   .attr("y", text_pos[1] + 60)
+            //   .attr("text-anchor", "start")
+            //   .text(score_string);
 
           })
 
 
           // mouseout to undo the mouseover
           circles.on("mouseout", function () { // first argument is always a string for the event. second arg for us is a function
+
+            tooltip.style("visibility","hidden");
 
             d3.select(this)
               .transition()
