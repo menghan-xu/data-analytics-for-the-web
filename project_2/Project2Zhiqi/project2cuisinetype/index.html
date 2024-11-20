@@ -1,0 +1,221 @@
+<head>
+    <title>NYC Interactive Restaurant Map</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+        }
+        .filter {
+            margin: 10px;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            overflow: hidden; 
+        }
+        #map {
+            flex: 3;
+            max-width: 800px;
+            height: 600px;
+            overflow: hidden; 
+            border: 1px solid #ccc;
+        }
+        svg {
+            width: 100%; 
+            height: 100%; 
+        }
+        #legend {
+            flex: 1;
+            padding: 10px;
+            font-size: 14px;
+            background-color: #f9f9f9;
+            border-left: 1px solid #ccc;
+            max-height: 600px; 
+            overflow-y: auto; 
+        }
+        .legend-item {
+            margin-bottom: 5px;
+        }
+        .legend-rect {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 5px;
+            border: 1px solid black;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            border: 1px solid black;
+            padding: 5px;
+            pointer-events: none;
+            font-size: 12px;
+            border-radius: 5px;
+        }
+        .restaurant-circle {
+            cursor: pointer;
+            stroke: black;
+            stroke-width: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive Restaurant Map - NYC</h1>
+
+    <!-- Filter dropdown menus -->
+    <div class="filter">
+        <label for="typeFilter">Restaurant Type:</label>
+        <select id="typeFilter">
+            <option value="All">All</option>
+        </select>
+
+        <label for="priceFilter">Price Range:</label>
+        <select id="priceFilter">
+            <option value="All">All</option>
+        </select>
+
+        <!-- Rating slider -->
+        <label for="ratingSlider">Rating:</label>
+        <input type="range" id="ratingSlider" min="1" max="5" step="0.1" value="5" style="width: 200px;">
+        <span id="ratingValue">5.0</span>
+    </div>
+
+    <div class="container">
+        <!-- Map Container -->
+        <div id="map">
+            <svg>
+                <g id="mapContent"></g> 
+            </svg>
+        </div>
+
+        <!-- Legend Container -->
+        <div id="legend"></div>
+    </div>
+
+    <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+
+    <script>
+        const svg = d3.select("svg");
+        const mapContent = d3.select("#mapContent"); 
+        const tooltip = d3.select("#tooltip");
+
+        // Variables for filters
+        let selectedType = "All";
+        let selectedPrice = "All";
+        let maxRating = 5;
+
+        // zoom in and out
+        const zoom = d3.zoom()
+            .scaleExtent([1, 8]) 
+            .on("zoom", (event) => {
+                mapContent.attr("transform", event.transform);
+            });
+
+        svg.call(zoom); 
+
+        // Load TopoJSON and Restaurant Data
+        Promise.all([
+            d3.json("nyctopo.json"), 
+            d3.csv("restaurant_final.csv") 
+        ]).then(([nycGeoData, restaurantData]) => {
+            const featureKey = Object.keys(nycGeoData.objects)[0];
+
+            const projection = d3.geoMercator()
+                .center([-73.94, 40.70])
+                .translate([400, 300]) 
+                .scale(120000);
+
+            const path = d3.geoPath().projection(projection);
+
+            // Map for nyc and surrounded
+            mapContent.selectAll("path")
+                      .data(topojson.feature(nycGeoData, nycGeoData.objects[featureKey]).features)
+                      .enter()
+                      .append("path")
+                      .attr("d", path)
+                      .attr("fill", "#ccc")
+                      .attr("stroke", "#333");
+
+            // Colours 
+            const types = [...new Set(restaurantData.map(d => d.restaurant_type))];
+            const colorMap = {};
+            types.forEach((type, i) => {
+                const hue = (i * 360 / types.length) % 360;
+                colorMap[type] = `hsl(${hue}, 70%, 50%)`;
+            });
+
+            // Filter
+            types.forEach(type => {
+                d3.select("#typeFilter").append("option").text(type).attr("value", type);
+            });
+
+            const prices = [...new Set(restaurantData.map(d => d.price_range))];
+            prices.forEach(price => {
+                d3.select("#priceFilter").append("option").text(price).attr("value", price);
+            });
+
+            // Legend
+            const legend = d3.select("#legend");
+            types.forEach(type => {
+                legend.append("div")
+                      .attr("class", "legend-item")
+                      .html(`<div class="legend-rect" style="background-color:${colorMap[type]}"></div>${type}`);
+            });
+
+            // Coordinate 
+            const updateMap = () => {
+                mapContent.selectAll(".restaurant-circle").remove();
+                mapContent.selectAll(".restaurant-circle")
+                          .data(restaurantData.filter(d => {
+                              const typeMatch = selectedType === "All" || d.restaurant_type === selectedType;
+                              const priceMatch = selectedPrice === "All" || d.price_range === selectedPrice;
+                              const ratingMatch = parseFloat(d.food_review) <= maxRating;
+                              return typeMatch && priceMatch && ratingMatch;
+                          }))
+                          .enter()
+                          .append("circle")
+                          .attr("class", "restaurant-circle")
+                          .attr("cx", d => projection([+d.longitude, +d.latitude])[0])
+                          .attr("cy", d => projection([+d.longitude, +d.latitude])[1])
+                          .attr("r", 5)
+                          .attr("fill", d => colorMap[d.restaurant_type])
+                          .on("mouseover", function (event, d) {
+                              tooltip.transition().duration(200).style("opacity", 1);
+                              tooltip.html(`<b>${d.name}</b><br>${d.restaurant_type}<br>${d.street_address}`)
+                                     .style("left", (event.pageX + 10) + "px")
+                                     .style("top", (event.pageY - 20) + "px");
+                          })
+                          .on("mouseout", () => {
+                              tooltip.transition().duration(200).style("opacity", 0);
+                          });
+            };
+
+            // Initial drawing
+            updateMap();
+
+            // Filter
+            d3.select("#typeFilter").on("change", function () {
+                selectedType = this.value;
+                updateMap();
+            });
+            d3.select("#priceFilter").on("change", function () {
+                selectedPrice = this.value;
+                updateMap();
+            });
+            d3.select("#ratingSlider").on("input", function () {
+                maxRating = parseFloat(this.value);
+                d3.select("#ratingValue").text(maxRating.toFixed(1));
+                updateMap();
+            });
+        }).catch(error => console.error("Error loading data:", error));
+    </script>
+</body>
+</html>

@@ -134,6 +134,7 @@
                 .translate([400, 300]) 
                 .scale(120000);
 
+
             // pick out topographic features and build d3 helpers
             var nyfeatures = topojson.feature(nyctopo,nyctopo.objects.nyc)
             var nymesh = topojson.mesh(nyctopo, nyctopo.objects.nyc, (a, b) => a.properties.BoroName !== b.properties.BoroName);    // 'Mesh' of all outlines put together for a stroke
@@ -151,7 +152,6 @@
             .attr("class","outline")
             .attr("d", path)
             .style("fill", "none");
-
 
         
             // filling the each neighborhood w the gradient
