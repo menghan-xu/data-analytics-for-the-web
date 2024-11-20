@@ -436,22 +436,22 @@
             // Appending all the text
 
 
-            map.append("rect")
-              .attr("class", "rect")
-              .attr("x", text_pos[0])
-              .attr("y", text_pos[1] - 20)
-              .attr('width', 400)
-              .attr('height', 90)
-              .attr('stroke', 'black')
-              .style("fill", function (d) {
+            // map.append("rect")
+            //   .attr("class", "rect")
+            //   .attr("x", text_pos[0])
+            //   .attr("y", text_pos[1] - 20)
+            //   .attr('width', 400)
+            //   .attr('height', 90)
+            //   .attr('stroke', 'black')
+            //   .style("fill", function (d) {
 
-                if (boro === "Manhattan") { return "#936ec4"; }
-                if (boro === "Bronx") { return "#cf69b1"; }
-                if (boro === "Queens") { return "#ff8286"; }
-                if (boro === "Brooklyn") { return "#f2ba5c"; }
-                if (boro === "Staten Island") { return "#cff79c"; }
+            //     if (boro === "Manhattan") { return "#936ec4"; }
+            //     if (boro === "Bronx") { return "#cf69b1"; }
+            //     if (boro === "Queens") { return "#ff8286"; }
+            //     if (boro === "Brooklyn") { return "#f2ba5c"; }
+            //     if (boro === "Staten Island") { return "#cff79c"; }
 
-              });
+            //   });
 
 
             tooltip.attr("transform",`translate(${text_pos[0]},${text_pos[1]})`);
@@ -618,7 +618,7 @@
         });
 
 
-        }).catch(error => console.error("Error loading data:", error)); //end of data fetching
+     
           
 
 
