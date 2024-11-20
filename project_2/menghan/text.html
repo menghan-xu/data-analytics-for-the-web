@@ -1,0 +1,356 @@
+<html><head>
+    <title>INFO 5100 - Project 2</title>
+    
+    
+      <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.2.0/highlight.min.js"></script>
+      <script src="https://d3js.org/d3.v7.min.js"></script>
+      <script src="https://d3js.org/topojson.v3.min.js"></script>
+      
+      <style>
+      
+        /* .neighborhood {
+          fill: none;
+          stroke: black;
+          stroke-width: 1px;
+        } */
+        .outline {
+          fill: none;
+          stroke: black;
+          stroke-width: 0.5px;
+        }
+        .tooltip {
+            pointer-events: none;
+        }
+        .label {
+          font-style: normal;
+          font-family: Arial, Helvetica, sans-serif;
+        }
+      
+      
+      </style>
+    
+    </head>
+    <body>
+      <div class="container larger">
+      <svg id="choropleth" height="700" width="1200" style="background: #f5f9ee; margin-top:50px" >
+      </svg>
+    
+      <svg id="colorLegend" height="50" width="200" style="background: #fff; margin-top:30px" >
+    
+        <!-- Filter dropdown menus -->
+    <div class="filter">
+      <label for="boroFilter">Boro:</label>
+      <select id="boroFilter">
+          <option value="All">All</option>
+      </select>
+
+      <label for="scoreFilter">Score:</label>
+      <select id="scoreFilter">
+          <option value="All">All</option>
+      </select>
+  </div>
+    
+
+      <script id="basicmap">
+    
+      const svg = d3.select("#choropleth");
+      const width = svg.attr("width");
+      const height = svg.attr("height");
+      const margin = { top: 20, right: 250, bottom: 20, left:20};
+      const mapWidth = width - margin.left - margin.right;
+      const mapHeight = height - margin.top - margin.bottom;
+      const map = svg.append("g")
+                      .attr("transform","translate("+margin.left+","+margin.top+")");
+      
+
+       // Variables for filters
+      let selectedBoro = "All";
+      let selectedScore = "All";
+
+      
+      // async function to load data and build the map
+      const requestData = async function() {
+        const nyctopo = await d3.json("nyctopo.json");
+        console.log(nyctopo);
+        
+      
+        // pick out topographic features and build d3 helpers
+        var nyfeatures = topojson.feature(nyctopo,nyctopo.objects.nyc)
+        var nymesh = topojson.mesh(nyctopo, nyctopo.objects.nyc, (a, b) => a.properties.BoroName !== b.properties.BoroName);    // 'Mesh' of all outlines put together for a stroke
+        var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], nyfeatures);
+        var path = d3.geoPath().projection(projection);
+
+        
+        // drawing neighborhoods and outlines
+        let nycPaths = map.selectAll("path.neighborhood").data(nyfeatures.features)
+                         .join("path")
+                         .attr("class", "neighborhood")
+                         .attr("d", path);
+      
+        map.append("path").datum(nymesh)
+           .attr("class","outline")
+           .attr("d", path)
+           .style("fill", "none");
+
+        let boro_colors2 = ["#ae6f8a","#6c8ca3","#e7b41b","#9da140","#cd7229"]
+        let boro_colors = {
+          manhattan: "#ae6f8a",
+          bronx: "#6c8ca3",
+          queens: "#e7b41b",
+          brooklyn: "#9da140",
+          staten_island: "#cd7229"
+        }
+        
+        // filling the each neighborhood w the gradient
+        map.selectAll(".neighborhood")
+            .style("fill", function (d) {
+              let boroName = d.properties.BoroName;
+              if(boroName === "Manhattan"){ return "#ae6f8a";}
+              if(boroName === "Bronx"){ return "#6c8ca3";}
+              if(boroName === "Queens"){ return "#e7b41b";}
+              if(boroName === "Brooklyn"){ return "#9da140";}
+              if(boroName === "Staten Island"){ return "#cd7229";}
+              })
+            .style("stroke", "none");
+      
+        // Pan and zoom
+
+        var zoom = d3.zoom()
+          .scaleExtent([1, 20])
+          .translateExtent([[-50, -50], [mapWidth + 50, mapHeight + 50]])  // to lock to edges
+          .on("zoom", mapZoomed);
+
+        svg.call(zoom);
+        svg.call(zoom.transform, d3.zoomIdentity);
+
+        function mapZoomed({transform}) {    
+          map.attr("transform", transform.toString() );
+          map.select(".outline")
+                    .attr("visibility", (transform.k > 3) ? "visible" : "hidden");
+      }
+
+      const restData = await d3.csv("restaurants_new.csv");
+      console.log(restData);
+
+      const ordinaryRestaurant = restData.filter(d => d.food_review > 3);   
+      
+      const colorExtent = d3.extent(ordinaryRestaurant, d=>d.food_review);
+      // const colorScale = d3.scaleSequential(d3.interpolateViridis).domain(colorExtent)
+      colorScale = d3.scaleQuantile()      // LLLLLLLLL  elelelelelelelelloelloeleolol
+                           .domain( colorExtent )
+                           .range(["#fff","#d1e8ed","#adc2da","#8879b3","#762b80"]);
+                            // .range([d3.rgb("#a008f2"), d3.rgb("#f9d6ec")])
+                            // .range([d3.rgb('#2cc3a5'), d3.rgb('#2c66c3')])
+                            // .interpolate(d3.interpolateHcl);
+                        
+
+      const colorMichelinScale = d3.scaleLinear().domain([1, 3])
+                                              .range([d3.rgb('#2cc3a5'), d3.rgb('#2c66c3')])
+                                              .interpolate(d3.interpolateHcl);
+      console.log(colorScale);
+      
+      function generateStarPoints(cx, cy, outerRadius, innerRadius) {
+    const points = [];
+    for (let i = 0; i < 10; i++) {
+        const angle = (Math.PI / 5) * i; 
+        const radius = i % 2 === 0 ? outerRadius : innerRadius; 
+        const x = cx + radius * Math.cos(angle);
+        const y = cy - radius * Math.sin(angle);
+        points.push([x, y]);
+    }
+    return points.map(p => p.join(",")).join(" ");
+}
+      map.selectAll(".restaurant")
+          .data(restData)
+          .join("g")
+          .attr("class", "restaurant")
+          .each(function(d) {
+            const group = d3.select(this);
+            // console.log(d.name);
+            // console.log(d.longitude);
+            // console.log(d.latitude);
+            const coords = projection([d.longitude, d.latitude]);
+            
+            if(d.food_review > 3.5){
+              group.append("circle")
+                    .attr("cx", coords[0])
+                    .attr("cy", coords[1])
+                    .attr("r", 2)
+                    .style("fill", colorScale(d.food_review));
+            }else{
+              const starPoints = generateStarPoints(coords[0], coords[1], 2, 1); // 五角星大小
+            group.append("polygon")
+                .attr("points", starPoints)
+                .attr("fill", function(d){
+                  if(d.food_review === "1.0")
+                    return '#FEF9A7';
+                  else if(d.food_review === "2.0")
+                    return '#FAC213';
+                  else return '#D61C4E'
+                }) 
+                .attr("stroke", "none") 
+                .attr("stroke-width", 1);
+            }
+          })
+           
+          //legend
+          drawLegend("#colorLegend", colorScale);
+
+
+
+
+
+
+
+
+        } 
+
+      
+      requestData();
+      
+      
+      
+      </script>
+      
+      <script>
+        function drawLegend(legendSelector, legendColorScale) {
+      
+      // This code should adapt to a variety of different kinds of color scales
+      //  Credit Prof. Rz if you are basing a legend on this structure, and note PERFORMANCE CONSIDERATIONS
+      
+      // Shrink legend bar by 5 px inwards from sides of SVG
+      const offsets = { width: 10,
+                        top: 2,
+                        bottom: 24 }; 
+      // Number of integer 'pixel steps' to draw when showing continuous scales
+      //    Warning, not using a canvas element so lots of rect tags will be created for low stepSize, causing issues with performance -- keep this large
+      const stepSize = 4; 
+      // Extend the minmax by 0% in either direction to expose more features by default
+      const minMaxExtendPercent = 0;
+       
+      
+      const legend = d3.select(legendSelector);
+      const legendHeight = legend.attr("height");
+      const legendBarWidth = legend.attr("width") - (offsets.width * 2);
+      const legendMinMax = d3.extent(legendColorScale.domain()); 
+                  // recover the min and max values from most kinds of numeric scales
+      const minMaxExtension = (legendMinMax[1] - legendMinMax[0]) * minMaxExtendPercent;
+      const barHeight = legendHeight - offsets.top - offsets.bottom;     
+      
+      // In this case the "data" are pixels, and we get numbers to use in colorScale
+      // Use this to make axis labels
+      let barScale = d3.scaleLinear().domain([legendMinMax[0]-minMaxExtension,
+                                                legendMinMax[1]+minMaxExtension])
+                                     .range([0,legendBarWidth]);
+      let barAxis = d3.axisBottom(barScale);
+      
+      // Place for bar slices to live
+      let bar = legend.append("g")
+                      .attr("class", "legend colorbar")
+                      .attr("transform", `translate(${offsets.width},${offsets.top})`)
+      
+      // ****** SWITCHES FOR DIFFERENT SCALE TYPES ******
+      
+      // Check if we're using a binning scale - if so, we make blocks of color
+      if (legendColorScale.hasOwnProperty('thresholds') || legendColorScale.hasOwnProperty('quantiles')) {
+        // Get the thresholds
+        let thresholds = [];
+        if (legendColorScale.hasOwnProperty('thresholds')) { thresholds = legendColorScale.thresholds() }
+        else { thresholds = legendColorScale.quantiles() }
+        
+        const barThresholds = [legendMinMax[0], ...thresholds, legendMinMax[1]];
+        
+        // Use the quantile breakpoints plus the min and max of the scale as tick values
+        barAxis.tickValues(barThresholds);
+        
+        // Draw rectangles between the threshold segments
+        for (let i=0; i<barThresholds.length-1; i++) {
+          let dataStart = barThresholds[i];
+          let dataEnd = barThresholds[i+1];
+          let pixelStart = barAxis.scale()(dataStart);
+          let pixelEnd = barAxis.scale()(dataEnd);
+          
+          bar.append("rect")
+             .attr("x", pixelStart)
+             .attr("y", 0)
+             .attr("width", pixelEnd - pixelStart )
+             .attr("height", barHeight)
+             .style("fill", legendColorScale( (dataStart + dataEnd) / 2.0 ) ); 
+        }
+      }
+      // Else if we have a continuous / roundable scale
+      //  In an ideal world you might construct a custom gradient mapped to the scale
+      //  For this one, we use a hack of making stepped rects
+      else if (legendColorScale.hasOwnProperty('rangeRound')) {
+        // NOTE: The barAxis may round min and max values to make them pretty
+        // ** This also means there is a risk of the legend going beyond scale bounds
+        // We need to use the barAxis min and max just to be sure the bar is complete
+        //    Using barAxis.scale().invert() goes from *axis* pixels to data values easily
+        // ** We also need to create patches for the scale if the labels exceed bounds
+        //     (floating point comparisons risky for small data ranges,but not a big deal
+        //      because patches will be indistinguishable from actual scale bottom)
+        // It's likely that scale clamping will actually do this for us elegantly
+        // ...but better to be safer and patch the regions anyways
+        
+        for (let i=0; i<legendBarWidth; i=i+stepSize) {
+          
+          let center = i+(stepSize/2);
+          let dataCenter = barAxis.scale().invert( center );
+          
+          // below normal scale bounds
+          if ( dataCenter < legendMinMax[0] ) { 
+            bar.append("rect")
+               .attr("x", i)
+               .attr("y", 0)
+               .attr("width", stepSize)
+               .attr("height",barHeight)
+               .style("fill", legendColorScale( legendMinMax[0] ) ); 
+           }
+           // within normal scale bounds
+           else if ( dataCenter < legendMinMax[1] ) {
+             bar.append("rect")
+                .attr("x", i)
+                .attr("y", 0)
+                .attr("width", stepSize)
+                .attr("height",barHeight)
+                .style("fill", legendColorScale( dataCenter ) ); 
+           }
+           // above normal scale bounds
+           else {
+             bar.append("rect")
+                .attr("x", i)
+                .attr("y", 0)
+                .attr("width", stepSize)
+                .attr("height",barHeight)
+                .style("fill", legendColorScale( legendMinMax[1] ) ); 
+           }
+          
+        }
+      }
+      // Otherwise we have a nominal scale
+      else {
+        let nomVals = legendColorScale.domain().sort();
+        
+        // Use a scaleBand to make blocks of color and simple labels
+        let barScale = d3.scaleBand().domain(nomVals)
+                                     .range([0,legendBarWidth])
+                                     .padding(0.05);
+        barAxis.scale(barScale);
+        
+        // Draw rectangles for each nominal entry
+        nomVals.forEach( d => {
+          bar.append("rect")
+             .attr("x", barScale(d) )
+             .attr("y", 0)
+             .attr("width", barScale.bandwidth() )
+             .attr("height", barHeight)
+             .style("fill", legendColorScale( d ) );
+        });
+      }}
+      </script>
+    
+    
+      </div>
+    </body>
+    </html>
+    
