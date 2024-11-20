@@ -24,8 +24,17 @@
         }
         .label {
           font-style: normal;
-          font-family: Arial, Helvetica, sans-serif;
+          font-family: Arial, sans-serif;
         }
+        h1 {
+          font-style: normal;
+          font-family: Arial, sans-serif;
+        }
+        body {
+          font-style: normal;
+          font-family: Arial, sans-serif;
+        }
+      
       
       
     
@@ -33,16 +42,33 @@
     
     </head>
     <body>
+
+      <h1>NYC 2024 Restaurant Inspection Results</h1>
+      <p><i>Filter by:</i></p>
       <div class="container larger">
+
+                      <!-- Filter dropdown menus -->
+    <div class="filter">
+      <label for="boroFilter">Boro:</label>
+      <select id="boroFilter">
+          <option value="All">All</option>
+      </select>
+
+      <label for="scoreFilter">Score:</label>
+      <select id="scoreFilter">
+          <option value="All">All</option>
+      </select>
+  </div>
+      
     
-    
-      <svg id="choropleth" height="700" width="1200" style="background: #f5f9ee; margin-top:50px" >
+      <svg id="bodytext" height="700" width="500" style="margin-right:0px"></svg>
+      <svg id="choropleth" height="700" width="700" style="background: #f5f9ee; margin-top:50px" >
     
       </svg>
     
      
     
-      </svg>
+
     
 
       <script id="basicmap">
@@ -50,7 +76,7 @@
       const svg = d3.select("#choropleth");
       const width = svg.attr("width");
       const height = svg.attr("height");
-      const margin = { top: 20, right: 250, bottom: 20, left:20};
+      const margin = { top: 20, right: 20, bottom: 20, left:20};
       const mapWidth = width - margin.left - margin.right;
       const mapHeight = height - margin.top - margin.bottom;
       const map = svg.append("g")
@@ -193,8 +219,124 @@
               return circlePosition[1];
             })
             .attr("fill", "black")  
-                
-      
+           
+            
+
+         
+          var bodytext_ypos = 75
+
+          // Adding the body text to the left of the map that explains the rating system
+
+          const svg_body_text = d3.select("#bodytext");
+
+          svg_body_text.append("text")  // adding the header
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos)
+            .style("text-align", "left")
+            .style("font-size", 24)
+            .text("What are these ratings?")
+
+          svg_body_text.append("text")  // adding the body text, painstakingly
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 30)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .text("When you mouse over a dot, you will be shown a ")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .text("restaurant's name, cuisine type, and letter grade.")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .text("When a restaurant is inspected, it will accrue points ")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .text("for health and safety violations. A lower score is better!")
+
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 40)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .attr("font-weight", 700)
+            .text("A:")
+            .append("tspan")
+            .attr("font-weight", 300)
+            .text(" score between 0 and 13 points")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .attr("font-weight", 700)
+            .text("B:")
+            .append("tspan")
+            .attr("font-weight", 300)
+            .text(" score between 14 and 27 points")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .attr("font-weight", 700)
+            .text("C:")
+            .append("tspan")
+            .attr("font-weight", 300)
+            .text(" score higher than a 28")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .attr("font-weight", 700)
+            .text("N:")
+            .append("tspan")
+            .attr("font-weight", 300)
+            .text(" not yet graded")
+
+          svg_body_text.append("text")
+            .attr("class", "bodytext")
+            .attr("x", 50)
+            .attr("y", bodytext_ypos += 20)
+            .style("text-align", "left")
+            .style("font-size", 16)
+            .attr("font-weight", 700)
+            .text("Z:")
+            .append("tspan")
+            .attr("font-weight", 300)
+            .text(" grade pending")
+
+
+
+        
+
+
+
+
           circles.on("mouseover", function () { // first argument is always a string for the event. second arg for us is a function
 
             d3.select(this)
@@ -264,20 +406,12 @@
               .attr("x", text_pos[0] + 5)
               .attr("y", text_pos[1] + 60)
               .attr("text-anchor", "start")
-              .text(grade_string);
-
-            // map.append("text")
-            //   .attr("class", "label")
-            //   .attr("x", text_pos[0])
-            //   .attr("y", 100)
-            //   .attr("text-anchor", "start")
-            //   .text(violation_string);
-
+              .text(score_string);
 
           })
 
 
-          // Mouseout, then undo what we did before
+          // mouseout to undo the mouseover
           circles.on("mouseout", function () { // first argument is always a string for the event. second arg for us is a function
 
             d3.select(this)
@@ -306,37 +440,39 @@
           }) 
 
 
-        })
+        };  // END OF UPDATE MAP FUNCTION
+
+            
+        updateMap();
+
+        // filter
+        d3.select("#boroFilter").on("change", function () {
+            selectedBoro = this.value;
+            console.log(selectedBoro)
+            updateMap();
+        });
+
+        d3.select("#scoreFilter").on("change", function () {
+            selectedScore = this.value;
+            console.log(selectedScore)
+            updateMap();
+        });
 
 
+        }).catch(error => console.error("Error loading data:", error)); //end of data fetching
+          
 
-        
-        
+
+        } // end of request data 
+
       
-         
-         
-
-
-
-
-
-
-
-
-
-      // });
-     
-       
-        
-      // END OF REQUESTDATA()
-      }
       requestData();
       
       
       
       </script>
       
-      
+
     
     
       </div>
