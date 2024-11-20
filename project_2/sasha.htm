@@ -13,8 +13,6 @@
           fill: none;
           stroke: white;
           stroke-width: 0.5 px;
-          stroke: white;
-          stroke-width: 0.5 px;
         }
         .outline {
           fill: none;
@@ -26,13 +24,7 @@
             background-color: white;
             border: 1px solid black;
             padding: 5px;
-            position: absolute;
-            background-color: white;
-            border: 1px solid black;
-            padding: 5px;
             pointer-events: none;
-            font-size: 12px;
-            border-radius: 5px;
             font-size: 12px;
             border-radius: 5px;
         }
@@ -47,7 +39,17 @@
         body {
           font-style: normal;
           font-family: Arial, sans-serif;
+          font-family: Arial, sans-serif;
         }
+        h1 {
+          font-style: normal;
+          font-family: Arial, sans-serif;
+        }
+        body {
+          font-style: normal;
+          font-family: Arial, sans-serif;
+        }
+      
       
       
       
@@ -58,6 +60,7 @@
     <body>
 
       <h1>NYC 2024 Restaurant Inspection Results</h1>
+      <a href="index.htm">Click to return back to the Michelin Star map.</a>
       <p><i>Filter by:</i></p>
       <div class="container larger">
 
@@ -83,19 +86,7 @@
      
     
 
-        <!-- Filter dropdown menus -->
-    <div class="filter">
-      <label for="boroFilter">Boro:</label>
-      <select id="boroFilter">
-          <option value="All">All</option>
-      </select>
-
-      <label for="scoreFilter">Score:</label>
-      <select id="scoreFilter">
-          <option value="All">All</option>
-      </select>
-  </div>
-
+    
 
       <script id="basicmap">
     
@@ -109,19 +100,10 @@
                       .attr("transform","translate("+margin.left+","+margin.top+")");
       
 
-      
-
 
        // Variables for filters
       let selectedBoro = "All";
       let selectedScore = "All";
-
-
-      // Tooltip variables
-      let tooltipWidth = 220;
-      let tooltipHeight = 80;
-      
-
 
 
       // Tooltip variables
@@ -154,9 +136,7 @@
            .attr("class","outline")
            .attr("d", path);
         
-        
 
-        // filling the each neighborhood w the right color
         // filling the each neighborhood w the right color
         map.selectAll(".neighborhood")
             .style("fill", function (d) {
@@ -166,13 +146,7 @@
               if(boroName === "Queens"){ return "#E7B41B";}
               if(boroName === "Brooklyn"){ return "#9DA140";}
               if(boroName === "Staten Island"){ return "#CD7229";}
-              if(boroName === "Manhattan"){ return "#AE6F8A";}
-              if(boroName === "Bronx"){ return "#6C8CA3";}
-              if(boroName === "Queens"){ return "#E7B41B";}
-              if(boroName === "Brooklyn"){ return "#9DA140";}
-              if(boroName === "Staten Island"){ return "#CD7229";}
               });
-      
       
 
         // Pan and zoom
@@ -280,7 +254,8 @@
             .attr("fill", "black")  
            
             
-  
+
+         
           var bodytext_ypos = 75
 
           // Adding the body text to the left of the map that explains the rating system
@@ -430,52 +405,10 @@
             .attr("alignment-baseline", "hanging")
             .attr("x", 0)
             .attr("y", 65);
-          // Getting the tooltip ready
-
-          let tooltip = map.append("g")
-            .attr("class", "tooltip")
-            .attr("visibility", "hidden");
-          tooltip.append("rect")
-            .attr("fill", "white")
-            .attr('stroke', 'black')
-            .attr("opacity", 0.9)
-            .attr("x", -tooltipWidth / 2.0)
-            .attr("y", 0)
-            .attr("width", tooltipWidth)
-            .attr("height", tooltipHeight)
-
-          let tooltip_name = tooltip.append("text")
-            .attr("fill", "black")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "hanging")
-            .attr("x", 0)
-            .attr("y", 5);
-
-          let tooltip_boro = tooltip.append("text")
-            .attr("fill", "black")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "hanging")
-            .attr("x", 0)
-            .attr("y", 25);
-
-          let tooltip_cuisine = tooltip.append("text")
-            .attr("fill", "black")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "hanging")
-            .attr("x", 0)
-            .attr("y", 45);
-
-          let tooltip_score = tooltip.append("text")
-            .attr("fill", "black")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "hanging")
-            .attr("x", 0)
-            .attr("y", 65);
 
 
           circles.on("mouseover", function () { // first argument is always a string for the event. second arg for us is a function
 
-            tooltip.style("visibility","visible")
             tooltip.style("visibility","visible")
             d3.select(this)
               .transition()
@@ -498,32 +431,6 @@
             let cuisine_string = `Cuisine: ${cuisine}`;
             let score_string = `Grade (Rating): ${score}`;
             let violation_string = `Violation Description: ${violation}`;
-
-
-            // Appending all the text
-
-
-            // map.append("rect")
-            //   .attr("class", "rect")
-            //   .attr("x", text_pos[0])
-            //   .attr("y", text_pos[1] - 20)
-            //   .attr('width', 400)
-            //   .attr('height', 90)
-            //   .attr('stroke', 'black')
-            //   .style("fill", function (d) {
-
-            //     if (boro === "Manhattan") { return "#936ec4"; }
-            //     if (boro === "Bronx") { return "#cf69b1"; }
-            //     if (boro === "Queens") { return "#ff8286"; }
-            //     if (boro === "Brooklyn") { return "#f2ba5c"; }
-            //     if (boro === "Staten Island") { return "#cff79c"; }
-            //     if (boro === "Manhattan") { return "#936ec4"; }
-            //     if (boro === "Bronx") { return "#cf69b1"; }
-            //     if (boro === "Queens") { return "#ff8286"; }
-            //     if (boro === "Brooklyn") { return "#f2ba5c"; }
-            //     if (boro === "Staten Island") { return "#cff79c"; }
-
-            //   });
 
 
             tooltip.attr("transform",`translate(${text_pos[0]},${text_pos[1]})`);
@@ -567,12 +474,6 @@
             //   .attr("y", text_pos[1] + 20)
             //   .attr("text-anchor", "start")
             //   .text(boro_string);
-            // map.append("text")
-            //   .attr("class", "label")
-            //   .attr("x", text_pos[0] + 5)
-            //   .attr("y", text_pos[1] + 20)
-            //   .attr("text-anchor", "start")
-            //   .text(boro_string);
 
             // map.append("text")
             //   .attr("class", "label")
@@ -580,19 +481,7 @@
             //   .attr("y", text_pos[1] + 40)
             //   .attr("text-anchor", "start")
             //   .text(cuisine_string);
-            // map.append("text")
-            //   .attr("class", "label")
-            //   .attr("x", text_pos[0] + 5)
-            //   .attr("y", text_pos[1] + 40)
-            //   .attr("text-anchor", "start")
-            //   .text(cuisine_string);
 
-            // map.append("text")
-            //   .attr("class", "label")
-            //   .attr("x", text_pos[0] + 5)
-            //   .attr("y", text_pos[1] + 60)
-            //   .attr("text-anchor", "start")
-            //   .text(score_string);
             // map.append("text")
             //   .attr("class", "label")
             //   .attr("x", text_pos[0] + 5)
@@ -604,9 +493,8 @@
 
 
           // mouseout to undo the mouseover
+          // mouseout to undo the mouseover
           circles.on("mouseout", function () { // first argument is always a string for the event. second arg for us is a function
-
-            tooltip.style("visibility","hidden");
 
             tooltip.style("visibility","hidden");
 
@@ -658,64 +546,8 @@
         }).catch(error => console.error("Error loading data:", error)); //end of data fetching
           
 
-        // let circles = map.selectAll("circle")  //select all circle elements
-        //     .data(rest_objs)
-        //     .join("circle") //does all the updating and such for you
-        //     .attr("r", function (d) {
-        //       if(d['boro'] === "Manhattan"){  // make the manhattan dots smaller since there's so many
-        //         return 2;
-        //       }
-        //       else{
-        //         return 3;
-        //       }
-        //     })
-        //     .attr("cx", function (d) {
-        //       var xpos = d.long;
-        //       var ypos = d.lat;
-        //       var circlePosition = projection( [xpos,  ypos] );
-        //       if(xpos === null || ypos === null || circlePosition === null){
-        //         return;
-        //       }
-        //       return circlePosition[0];
-        //     }) 
-        //     .attr("cy", function (d) {
-        //       var xpos = d.long;
-        //       var ypos = d.lat;
-        //       var circlePosition = projection( [xpos,  ypos] );
-        //       if(xpos === null || ypos === null || circlePosition === null){
-        //         return;
-        //       }
-        //       return circlePosition[1];
-        //     })
-        //     .attr("fill", "black")  
-                
-      
-
-
-
-            
-        updateMap();
-
-        // filter
-        d3.select("#boroFilter").on("change", function () {
-            selectedBoro = this.value;
-            console.log(selectedBoro)
-            updateMap();
-        });
-
-        d3.select("#scoreFilter").on("change", function () {
-            selectedScore = this.value;
-            console.log(selectedScore)
-            updateMap();
-        });
-
-
-     
-          
-
 
         } // end of request data 
-
 
       
       requestData();
@@ -724,6 +556,7 @@
       
       </script>
       
+
 
     
     
